@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nộp Báo Cáo Kiểm Tra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Nộp Báo Cáo Mới</h2>
+        
+        <form id="uploadForm" class="space-y-4">
+            <!-- Chọn Đường dây -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Chọn Đường Dây</label>
+                <select id="ma_thiet_bi" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">-- Đang tải danh sách... --</option>
+                </select>
+            </div>
+
+            <!-- Chọn Loại Biên bản -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Loại Biên Bản</label>
+                <select id="bbkt_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">-- Đang tải danh sách... --</option>
+                </select>
+            </div>
+
+            <!-- Chọn File -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">File Báo Cáo (Excel/PDF/Ảnh)</label>
+                <input type="file" id="fileInput" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <button type="submit" id="btnSubmit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
+                Tải lên báo cáo
+            </button>
+            <p id="statusMsg" class="text-center text-sm font-medium mt-2"></p>
+        </form>
+    </div>
+
+    <script>
+        // 1. CẤU HÌNH API
+        const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co'; 
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyqrGn44SxaxJ-P0CCtvToYnIKfTp9gsrGtLayCmpp5PTk23F6zFWdWenW1JubpkJ0hYQ/exec';
+
+        // 2. TẢI DANH SÁCH DROPDOWN KHI MỞ TRANG
+        async function loadDropdowns() {
+            // Tải danh sách đường dây
+            const { data: ddayData } = await supabase.from('dday').select('*');
+            const ddaySelect = document.getElementById('ma_thiet_bi');
+            ddaySelect.innerHTML = '<option value="">-- Chọn đường dây --</option>';
+            ddayData.forEach(item => {
+                ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`;
+            });
+
+            // Tải danh sách loại biên bản
+            const { data: dmbbData } = await supabase.from('dmbb').select('*');
+            const dmbbSelect = document.getElementById('bbkt_id');
+            dmbbSelect.innerHTML = '<option value="">-- Chọn loại biên bản --</option>';
+            dmbbData.forEach(item => {
+                dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`;
+            });
+        }
+        loadDropdowns();
+
+        // 3. XỬ LÝ KHI BẤM NÚT "TẢI LÊN BÁO CÁO"
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const status = document.getElementById('statusMsg');
+            const ma_thiet_bi = document.getElementById('ma_thiet_bi').value;
+            const bbkt_id = document.getElementById('bbkt_id').value;
+            const file = document.getElementById('fileInput').files[0];
+
+            btn.disabled = true;
+            btn.innerText = "Đang đẩy file lên Google Drive...";
+            status.innerText = "";
+            status.className = "text-center text-sm font-medium mt-2 text-blue-600";
+
+            try {
+                // Đọc file thành chuỗi Base64
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    const base64Data = reader.result.split(',')[1];
+                    
+                    // Gửi qua Google Drive
+                    const response = await fetch(googleScriptUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            mimeType: file.type,
+                            base64: base64Data
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if(result.status === 'success') {
+                        btn.innerText = "Đang lưu dữ liệu vào Supabase...";
+                        
+                        // Lưu link vào Supabase
+                        const { error } = await supabase.from('bbkt').insert([
+                            { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url }
+                        ]);
+
+                        if(error) throw error;
+
+                        status.innerText = "✅ Tải lên thành công!";
+                        status.className = "text-center text-sm font-medium mt-2 text-green-600";
+                        document.getElementById('uploadForm').reset();
+                    } else {
+                        throw new Error("Lỗi lưu Drive: " + result.message);
+                    }
+                    btn.disabled = false;
+                    btn.innerText = "Tải lên báo cáo";
+                };
+                reader.readAsDataURL(file);
+                
+            } catch (err) {
+                console.error(err);
+                status.innerText = "❌ Có lỗi xảy ra, xem console để biết thêm.";
+                status.className = "text-center text-sm font-medium mt-2 text-red-600";
+                btn.disabled = false;
+                btn.innerText = "Tải lên báo cáo";
+            }
+        });
+    </script>
+</body>
+</html>
