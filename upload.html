@@ -7,66 +7,72 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 min-h-screen p-8">
 
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Nộp Báo Cáo Mới</h2>
-        
-        <form id="uploadForm" class="space-y-4">
-            <!-- Chọn Đường dây -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Chọn Đường Dây</label>
-                <select id="ma_thiet_bi" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                    <option value="">-- Đang tải danh sách... --</option>
-                </select>
-            </div>
+    <div class="max-w-md mx-auto">
+        <div class="mb-6 flex justify-center space-x-4">
+            <a href="index.html" class="bg-white text-blue-600 px-6 py-2 rounded shadow font-bold hover:bg-gray-100 border border-blue-600">📊 Bảng Tổng Hợp</a>
+            <a href="upload.html" class="bg-blue-600 text-white px-6 py-2 rounded shadow font-bold hover:bg-blue-700">📤 Nộp Báo Cáo Mới</a>
+        </div>
 
-            <!-- Chọn Loại Biên bản -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Loại Biên Bản</label>
-                <select id="bbkt_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                    <option value="">-- Đang tải danh sách... --</option>
-                </select>
-            </div>
+        <div class="bg-white p-8 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Nộp Báo Cáo Mới</h2>
+            
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Chọn Đường Dây</label>
+                    <select id="ma_thiet_bi" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <option value="">-- Đang tải danh sách... --</option>
+                    </select>
+                </div>
 
-            <!-- Chọn File -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700">File Báo Cáo (Excel/PDF/Ảnh)</label>
-                <input type="file" id="fileInput" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-            </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Loại Biên Bản</label>
+                    <select id="bbkt_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <option value="">-- Đang tải danh sách... --</option>
+                    </select>
+                </div>
 
-            <button type="submit" id="btnSubmit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
-                Tải lên báo cáo
-            </button>
-            <p id="statusMsg" class="text-center text-sm font-medium mt-2"></p>
-        </form>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">File Báo Cáo (Excel/PDF/Ảnh)</label>
+                    <input type="file" id="fileInput" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+
+                <button type="submit" id="btnSubmit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
+                    Tải lên báo cáo
+                </button>
+                <p id="statusMsg" class="text-center text-sm font-medium mt-2"></p>
+            </form>
+        </div>
     </div>
 
     <script>
         // 1. CẤU HÌNH API
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co'; 
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        const db = supabase.createClient(supabaseUrl, supabaseKey);
         
         const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyqrGn44SxaxJ-P0CCtvToYnIKfTp9gsrGtLayCmpp5PTk23F6zFWdWenW1JubpkJ0hYQ/exec';
 
         // 2. TẢI DANH SÁCH DROPDOWN KHI MỞ TRANG
         async function loadDropdowns() {
-            // Tải danh sách đường dây
-            const { data: ddayData } = await supabase.from('dday').select('*');
+            const { data: ddayData } = await db.from('dday').select('*');
             const ddaySelect = document.getElementById('ma_thiet_bi');
             ddaySelect.innerHTML = '<option value="">-- Chọn đường dây --</option>';
-            ddayData.forEach(item => {
-                ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`;
-            });
+            if(ddayData) {
+                ddayData.forEach(item => {
+                    ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`;
+                });
+            }
 
-            // Tải danh sách loại biên bản
-            const { data: dmbbData } = await supabase.from('dmbb').select('*');
+            const { data: dmbbData } = await db.from('dmbb').select('*');
             const dmbbSelect = document.getElementById('bbkt_id');
             dmbbSelect.innerHTML = '<option value="">-- Chọn loại biên bản --</option>';
-            dmbbData.forEach(item => {
-                dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`;
-            });
+            if(dmbbData) {
+                dmbbData.forEach(item => {
+                    dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`;
+                });
+            }
         }
         loadDropdowns();
 
@@ -85,12 +91,10 @@
             status.className = "text-center text-sm font-medium mt-2 text-blue-600";
 
             try {
-                // Đọc file thành chuỗi Base64
                 const reader = new FileReader();
                 reader.onload = async function() {
                     const base64Data = reader.result.split(',')[1];
                     
-                    // Gửi qua Google Drive
                     const response = await fetch(googleScriptUrl, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -105,14 +109,13 @@
                     if(result.status === 'success') {
                         btn.innerText = "Đang lưu dữ liệu vào Supabase...";
                         
-                        // Lưu link vào Supabase
-                        const { error } = await supabase.from('bbkt').insert([
+                        const { error } = await db.from('bbkt').insert([
                             { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url }
                         ]);
 
                         if(error) throw error;
 
-                        status.innerText = "✅ Tải lên thành công!";
+                        status.innerText = "✅ Tải lên thành công! Qua bảng tổng hợp để kiểm tra nhé.";
                         status.className = "text-center text-sm font-medium mt-2 text-green-600";
                         document.getElementById('uploadForm').reset();
                     } else {
@@ -125,7 +128,7 @@
                 
             } catch (err) {
                 console.error(err);
-                status.innerText = "❌ Có lỗi xảy ra, xem console để biết thêm.";
+                status.innerText = "❌ Có lỗi xảy ra, hãy kiểm tra lại kết nối mạng.";
                 status.className = "text-center text-sm font-medium mt-2 text-red-600";
                 btn.disabled = false;
                 btn.innerText = "Tải lên báo cáo";
