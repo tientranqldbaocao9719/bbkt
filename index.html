@@ -16,7 +16,10 @@
         
         /* Tối ưu chiều cao bảng để chiếm trọn phần dưới màn hình */
         .table-container { height: calc(100vh - 170px); overflow: auto; -webkit-overflow-scrolling: touch; }
-        td, th { padding: 8px 12px; font-size: 13px; text-align: center; white-space: nowrap; }
+        
+        /* Tách biệt định dạng td (dữ liệu) và th (tiêu đề) */
+        td { padding: 8px 12px; font-size: 13px; text-align: center; white-space: nowrap; }
+        th { padding: 8px 12px; font-size: 13px; text-align: center; white-space: normal; line-height: 1.2; } /* Cho phép tiêu đề xuống hàng */
         
         /* Thanh cuộn nhỏ gọn */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -43,7 +46,6 @@
                         </select>
                 </div>
                 
-                <a href="nam.html" class="bg-slate-700 text-white px-3 py-1 md:py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Năm</a>
                 <a href="upload.html" class="bg-blue-600 text-white px-3 py-1 md:py-1.5 rounded shadow text-xs md:text-sm font-bold hover:bg-blue-500 transition-colors">Nộp Mới</a>
             </div>
         </div>
@@ -128,9 +130,10 @@
             let html = `<tr class="bg-slate-100 text-slate-700 uppercase text-[10px] md:text-[11px] tracking-wide">
                 <th class="p-2 sticky-col top-0 font-bold border-b border-slate-300 shadow-sm w-48 md:w-64 text-left z-[35]">Tên Đường Dây</th>`;
             config.forEach(c => {
-                html += `<th class="p-2 text-center border-b border-slate-300 shadow-sm min-w-[80px] md:min-w-[100px]">
-                    <span class="block truncate w-20 md:w-auto mx-auto" title="${c.ten_bb}">${c.ten_bb}</span>
-                    <span class="text-[9px] text-gray-500 font-normal mt-0.5 block normal-case">Cần: ${c.required_count}</span>
+                // Đã sửa lại class w-24 md:w-32 và whitespace-normal để ép chữ xuống hàng
+                html += `<th class="p-2 text-center border-b border-slate-300 shadow-sm w-24 md:w-32">
+                    <span class="block mx-auto whitespace-normal leading-tight">${c.ten_bb}</span>
+                    <span class="text-[9px] text-gray-500 font-normal mt-1 block normal-case">Cần: ${c.required_count}</span>
                 </th>`;
             });
             html += `</tr>`;
@@ -167,8 +170,9 @@
                 let totalRequired = data.length * c.required_count;
                 data.forEach(row => totalActual += row.reports[c.bbkt_id].actual);
                 
-                statsHtml += `<div class="flex items-center gap-1.5 bg-slate-700 px-2 py-0.5 rounded border border-slate-600 shadow-sm">
-                    <span class="text-[10px] text-slate-300 uppercase truncate max-w-[80px] md:max-w-[120px]" title="${c.ten_bb}">${c.ten_bb}</span>
+                // Đã cấu hình shrink-0 và whitespace-nowrap để không bị cắt chữ
+                statsHtml += `<div class="flex items-center gap-1.5 bg-slate-700 px-2 py-0.5 rounded border border-slate-600 shadow-sm shrink-0">
+                    <span class="text-[10px] text-slate-300 uppercase whitespace-nowrap">${c.ten_bb}</span>
                     <span class="text-xs font-black text-blue-400">${totalActual}/${totalRequired}</span>
                 </div>`;
             });
