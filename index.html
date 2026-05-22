@@ -11,21 +11,16 @@
         body { overflow: hidden; } 
         .modal { transition: opacity 0.2s ease; }
         body.modal-active { overflow: hidden; }
-        
         .table-container { height: calc(100vh - 150px); overflow: auto; -webkit-overflow-scrolling: touch; background: #fff; }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
-        
         th { background-color: #f8fafc; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 8px; text-align: center; vertical-align: middle; }
         td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 0; height: 44px; }
-        
         .sticky-col { position: sticky; left: 0; z-index: 10; text-align: left; padding: 10px 12px; font-size: 13px; font-weight: 700; color: #334155; background-color: #ffffff; box-shadow: inset -1px 0 0 #cbd5e1; }
         th.sticky-col { z-index: 30; background-color: #f8fafc; }
-
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -37,7 +32,6 @@
             <div class="text-white font-bold text-lg md:text-xl flex items-center tracking-wide">
                 <i class="fa-solid fa-bolt mr-2 text-blue-400"></i> APP QUẢN LÝ BÁO CÁO
             </div>
-            
             <div class="flex items-center gap-3">
                 <div class="bg-slate-800 flex items-center rounded border border-slate-600 overflow-hidden shadow-inner">
                     <span class="px-3 text-slate-300 text-sm font-bold hidden md:inline bg-slate-800">Năm</span>
@@ -61,7 +55,7 @@
                 <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Gõ tên đường dây để tìm nhanh..." class="pl-9 pr-3 py-1.5 w-full border border-slate-300 rounded focus:ring-2 focus:ring-blue-400 outline-none text-sm bg-slate-50">
             </div>
             <div class="text-xs text-slate-600 font-medium whitespace-nowrap hidden sm:flex items-center gap-1.5 pr-2">
-                <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Ô màu vàng là chưa nộp đủ
+                <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Ô màu vàng là quá hạn chu kỳ
             </div>
         </div>
 
@@ -90,32 +84,25 @@
     </div>
 
     <script>
-        // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
         const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwOo1wv-sAjt7PrNSZuZHs3LyNALsHlNGzSmFnjyPz0bHwaYrZ_xal84exutrQLn8v5Uw/exec';
 
-        // Gán năm mặc định cho ô nhập
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
 
-        // Hàm kiểm tra Pass Admin
         function checkAdminPassword() {
             let pass = prompt("Vui lòng nhập mật khẩu quản trị viên:");
-            if (pass === "111986") {
-                window.location.href = "admin.html";
-            } else if (pass !== null) {
-                alert("Mật khẩu không chính xác!");
-            }
+            if (pass === "111986") { window.location.href = "admin.html"; } 
+            else if (pass !== null) { alert("Mật khẩu không chính xác!"); }
         }
 
         async function init() {
             const year = document.getElementById('yearPicker').value;
-            if(!year) return; // Tránh lỗi nếu người dùng xóa trắng ô năm
+            if(!year) return;
 
             const { data, error } = await db.rpc('get_yearly_report_summary', { target_year: parseInt(year) });
-            
             if (error) { console.error(error); alert("Lỗi tải dữ liệu!"); return; }
 
             let totalActualOverall = 0;
@@ -126,10 +113,7 @@
                 c.colActual = 0;
                 c.colReqCurrent = data.data.length * c.required_count;
                 c.colReqYear = data.data.length * (12 / c.tan_suat);
-
-                data.data.forEach(row => {
-                    c.colActual += row.reports[c.bbkt_id].actual;
-                });
+                data.data.forEach(row => { c.colActual += row.reports[c.bbkt_id].actual; });
 
                 totalActualOverall += c.colActual;
                 totalReqCurrentOverall += c.colReqCurrent;
@@ -159,15 +143,12 @@
         }
 
         function renderHeader(config) {
-            let html = `<tr>
-                <th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
+            let html = `<tr><th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
                 const shortName = c.ten_bb.replace(/biên bản /gi, '').trim();
                 html += `<th class="min-w-[100px]">
                     <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${shortName}</div>
-                    <div class="mt-2">
-                        <span class="inline-block bg-slate-800 text-blue-400 text-[11px] font-black px-2.5 py-1 rounded shadow-sm">${c.colActual}/${c.colReqCurrent}</span>
-                    </div>
+                    <div class="mt-2"><span class="inline-block bg-slate-800 text-blue-400 text-[11px] font-black px-2.5 py-1 rounded shadow-sm">${c.colActual}/${c.colReqCurrent}</span></div>
                 </th>`;
             });
             html += `</tr>`;
@@ -182,7 +163,9 @@
                 
                 config.forEach(c => {
                     const r = row.reports[c.bbkt_id];
-                    const isMissing = r.actual < r.required;
+                    
+                    // SỬ DỤNG TRÍ THÔNG MINH TỪ SUPABASE: Thay vì đếm số lượng r.actual < r.required, giờ gọi cờ is_compliant
+                    const isMissing = !r.is_compliant;
                     
                     const bgClass = isMissing ? 'bg-yellow-100 hover:brightness-95' : 'bg-transparent hover:bg-slate-100';
                     const textClass = isMissing ? 'text-yellow-800' : 'text-slate-600';
@@ -213,7 +196,6 @@
                 html += '<div class="max-h-48 overflow-y-auto mb-4 border-b border-dashed border-slate-300 pb-4 space-y-2">';
                 details.forEach((d) => {
                     const month = parseInt(d.ngay.split('/')[1]); 
-                    
                     html += `<div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
                         <div>
                             <p class="text-[10px] text-blue-600 uppercase font-black bg-blue-50 px-2 py-0.5 rounded inline-block mb-1">THÁNG ${month}</p>
