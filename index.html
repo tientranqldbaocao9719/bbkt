@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Theo Dõi Biên Bản Kiểm Tra</title>
+    <!-- Nhúng thư viện CSS để giao diện đẹp sẵn -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Nhúng thư viện kết nối Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: center; }
+        th { background-color: #f3f4f6; font-weight: bold; }
+        .ten-duong-day { text-align: left; font-weight: 500; }
+        .da-nop { color: #16a34a; font-weight: bold; cursor: pointer; text-decoration: underline; }
+        .chua-nop { color: #dc2626; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 uppercase text-center">Tổng hợp tiến độ nộp biên bản kiểm tra</h1>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr>
+                        <th class="ten-duong-day w-64">Tên Đường Dây</th>
+                        <th>KT Ngày</th>
+                        <th>KT Đêm</th>
+                        <th>Đo Điện Trở</th>
+                        <th>Nhiệt Độ</th>
+                        <th>Tĩnh Không</th>
+                        <th>Giao Chéo Sông</th>
+                        <th>Giao Chéo Đường Bộ</th>
+                        <th>Tồn Tại</th>
+                    </tr>
+                </thead>
+                <tbody id="bang-du-lieu">
+                    <tr><td colspan="9" class="text-center text-gray-500 py-4">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 1. KẾT NỐI VỚI SUPABASE (Thay mã của bạn vào đây)
+        const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 2. HÀM LẤY VÀ HIỂN THỊ DỮ LIỆU
+        async function loadData() {
+            // Gọi dữ liệu từ cái VIEW bạn đã tạo lúc nãy
+            const { data, error } = await supabase
+                .from('tong_hop_bao_cao')
+                .select('*');
+
+            if (error) {
+                console.error("Lỗi tải dữ liệu: ", error);
+                document.getElementById('bang-du-lieu').innerHTML = '<tr><td colspan="9">Lỗi tải dữ liệu. Hãy kiểm tra lại API Key.</td></tr>';
+                return;
+            }
+
+            const tbody = document.getElementById('bang-du-lieu');
+            tbody.innerHTML = ''; // Xóa dòng "Đang tải"
+
+            // Hàm tạo ô kết quả (Có file thì hiện Xem File, không thì hiện Chưa nộp)
+            const taoCell = (url) => {
+                if (url) return `<td class="da-nop"><a href="${url}" target="_blank">✅ Xem file</a></td>`;
+                return `<td class="chua-nop">❌ Trống</td>`;
+            };
+
+            // Quét từng dòng dữ liệu và in ra bảng
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="ten-duong-day">${row.ten_duong_day}</td>
+                    ${taoCell(row.bb_ktngay)}
+                    ${taoCell(row.bb_ktdem)}
+                    ${taoCell(row.bb_dientro)}
+                    ${taoCell(row.bb_nhietdo)}
+                    ${taoCell(row.bb_tinhkhong)}
+                    ${taoCell(row.bb_giaocheo_song)}
+                    ${taoCell(row.bb_giaocheo_dbo)}
+                    ${taoCell(row.bb_tontai)}
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Chạy hàm khi vừa mở web
+        loadData();
+    </script>
+</body>
+</html>
