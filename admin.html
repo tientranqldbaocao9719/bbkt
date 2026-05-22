@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Duyệt Báo Cáo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .sticky-col { position: sticky; left: 0; background-color: #ffffff; z-index: 20; border-right: 1px solid #e2e8f0; }
+        .sticky-header { position: sticky; top: 0; z-index: 30; }
+        .table-container { height: calc(100vh - 140px); overflow: auto; -webkit-overflow-scrolling: touch; }
+        td, th { padding: 10px 12px; font-size: 13px; text-align: center; white-space: nowrap; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans leading-tight text-slate-800 antialiased h-screen overflow-hidden flex flex-col">
+
+    <nav class="bg-slate-900 p-2 md:px-4 shadow z-50 shrink-0 border-b-2 border-red-500">
+        <div class="mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="text-white font-bold text-base md:text-lg flex items-center">
+                <i class="fa-solid fa-user-shield mr-2 text-red-400"></i> QUẢN TRỊ VIÊN (ADMIN)
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="bg-slate-700 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Tháng</a>
+                <a href="nam.html" class="bg-slate-700 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Năm</a>
+                <a href="upload.html" class="bg-slate-700 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Nộp Mới</a>
+                <span class="bg-red-600 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold ml-2">Duyệt File</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="p-2 md:p-4 w-full flex-1 flex flex-col min-h-0">
+        <div class="bg-white rounded shadow-md flex flex-col h-full border border-slate-200 overflow-hidden relative">
+            
+            <div class="table-container w-full bg-white relative flex-1">
+                <table class="w-full text-left border-collapse" id="adminTable">
+                    <thead class="sticky-header shadow-sm bg-slate-100 uppercase text-[11px] text-slate-600 tracking-wide">
+                        <tr>
+                            <th class="p-3 sticky-col top-0 font-bold border-b border-slate-300 w-24 z-[35]">Hành Động</th>
+                            <th class="p-3 border-b border-slate-300 w-28">Ngày Kiểm Tra</th>
+                            <th class="p-3 border-b border-slate-300 text-left min-w-[200px]">Tên Đường Dây</th>
+                            <th class="p-3 border-b border-slate-300">Loại Biên Bản</th>
+                            <th class="p-3 border-b border-slate-300">File Đính Kèm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody" class="divide-y divide-slate-200 bg-white">
+                        <tr><td colspan="5" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm">Đang nhờ Supabase lấy dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH API ---
+        const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function loadAdminData() {
+            try {
+                // Sức mạnh của Supabase: Chỉ gọi 1 hàm duy nhất từ VIEW đã ghép sẵn
+                const { data, error } = await db.from('admin_recent_reports')
+                                                .select('*')
+                                                .limit(100);
+
+                if (error) throw error;
+
+                let html = '';
+                if (data.length === 0) {
+                    html = `<tr><td colspan="5" class="p-10 text-center text-slate-500 font-bold">Chưa có biên bản nào trong hệ thống.</td></tr>`;
+                } else {
+                    data.forEach(r => {
+                        // Dữ liệu r bây giờ đã có sẵn ten_duong_day và ten_bb từ Supabase trả về
+                        const dDate = new Date(r.thoi_gian);
+                        const dateStr = `${dDate.getDate().toString().padStart(2, '0')}/${(dDate.getMonth()+1).toString().padStart(2, '0')}/${dDate.getFullYear()}`;
+
+                        html += `<tr class="hover:bg-slate-50 transition-colors group">
+                            <td class="p-2 sticky-col bg-white text-center border-r border-slate-200 group-hover:bg-slate-50">
+                                <button onclick="deleteReport('${r.baocao_id}')" class="bg-red-100 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow-sm border border-red-200">
+                                    <i class="fa-solid fa-trash-can mr-1"></i> Xóa
+                                </button>
+                            </td>
+                            <td class="p-2 font-bold text-slate-800">${dateStr}</td>
+                            <td class="p-2 text-left text-slate-700 text-sm font-medium whitespace-normal leading-tight min-w-[200px]">${r.ten_duong_day || 'Không xác định'}</td>
+                            <td class="p-2 text-slate-600 text-xs font-bold bg-slate-50">${r.ten_bb || 'Không xác định'}</td>
+                            <td class="p-2 text-center">
+                                <a href="${r.file_url}" target="_blank" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-200 transition-colors inline-block shadow-sm">
+                                    <i class="fa-solid fa-file-pdf mr-1"></i> Xem File
+                                </a>
+                            </td>
+                        </tr>`;
+                    });
+                }
+                document.getElementById('tbody').innerHTML = html;
+
+            } catch (err) {
+                document.getElementById('tbody').innerHTML = `<tr><td colspan="5" class="p-10 text-center text-red-500 font-bold">❌ Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function deleteReport(baocao_id) {
+            if (!confirm('⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA biên bản này?\n\nSau khi xóa, bảng thống kê sẽ báo thiếu và nhân viên bắt buộc phải nộp lại.')) {
+                return;
+            }
+
+            try {
+                // Khi xóa, vẫn phải xóa ở bảng gốc bbkt (không xóa ở view được)
+                const { error } = await db.from('bbkt').delete().eq('baocao_id', baocao_id);
+                
+                if (error) throw error;
+
+                alert('✅ Đã xóa biên bản thành công!');
+                loadAdminData(); // Cập nhật lại view
+                
+            } catch (err) {
+                alert('❌ Lỗi khi xóa: ' + err.message);
+            }
+        }
+
+        // Khởi động
+        loadAdminData();
+    </script>
+</body>
+</html>
