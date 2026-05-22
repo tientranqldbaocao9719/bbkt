@@ -13,8 +13,8 @@
         body.modal-active { overflow: hidden; }
         .table-container { height: calc(100vh - 150px); overflow: auto; -webkit-overflow-scrolling: touch; background: #fff; }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
-        th { background-color: #f8fafc; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 8px; text-align: center; vertical-align: middle; }
-        td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 0; height: 44px; }
+        th { background-color: #f8fafc; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 8px; text-align: center; vertical-align: middle; transition: display 0.2s; }
+        td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 0; height: 44px; transition: display 0.2s; }
         .sticky-col { position: sticky; left: 0; z-index: 10; text-align: left; padding: 10px 12px; font-size: 13px; font-weight: 700; color: #334155; background-color: #ffffff; box-shadow: inset -1px 0 0 #cbd5e1; }
         th.sticky-col { z-index: 30; background-color: #f8fafc; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -49,13 +49,21 @@
     </div>
 
     <div class="flex-1 flex flex-col min-h-0 bg-white">
-        <div class="p-2 border-b border-slate-200 bg-white flex justify-between items-center gap-3 shrink-0">
-            <div class="relative w-full md:w-[400px]">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
-                <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Gõ tên đường dây để tìm nhanh..." class="pl-9 pr-3 py-1.5 w-full border border-slate-300 rounded focus:ring-2 focus:ring-blue-400 outline-none text-sm bg-slate-50">
+        <div class="p-2 border-b border-slate-200 bg-white flex flex-col sm:flex-row justify-between items-center gap-2 shrink-0">
+            <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <div class="relative w-full sm:w-[300px]">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Tìm tên đường dây..." class="pl-9 pr-3 py-1.5 w-full border border-slate-300 rounded focus:ring-2 focus:ring-blue-400 outline-none text-sm bg-slate-50">
+                </div>
+                <div class="relative w-full sm:w-auto">
+                    <select id="colFilter" onchange="filterColumns()" class="w-full sm:w-auto pl-3 pr-8 py-1.5 border border-blue-300 rounded focus:ring-2 focus:ring-blue-400 outline-none text-sm bg-blue-50 text-blue-800 font-bold cursor-pointer appearance-none">
+                        <option value="ALL">Hiển thị tất cả biên bản</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-blue-600"><i class="fa-solid fa-filter"></i></span>
+                </div>
             </div>
-            <div class="text-xs text-slate-600 font-medium whitespace-nowrap hidden sm:flex items-center gap-1.5 pr-2">
-                <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Ô màu vàng là chưa đủ số lượng hoặc quá hạn chu kỳ
+            <div class="text-[11px] text-slate-600 font-medium whitespace-nowrap hidden lg:flex items-center gap-1.5 pr-2">
+                <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Màu vàng là vi phạm chu kỳ
             </div>
         </div>
 
@@ -109,7 +117,10 @@
             let totalReqCurrentOverall = 0;
             let totalReqYearOverall = 0;
 
-            data.config.forEach(c => {
+            // Xây dựng danh sách thả xuống cho Bộ Lọc Cột
+            let filterHtml = '<option value="ALL">Hiển thị tất cả biên bản</option>';
+
+            data.config.forEach((c, index) => {
                 c.colActual = 0;
                 c.colReqCurrent = data.data.length * c.required_count;
                 c.colReqYear = data.data.length * (12 / c.tan_suat);
@@ -118,11 +129,19 @@
                 totalActualOverall += c.colActual;
                 totalReqCurrentOverall += c.colReqCurrent;
                 totalReqYearOverall += c.colReqYear;
+                
+                // Thêm Option vào Dropdown lọc cột
+                filterHtml += `<option value="${index}">${c.ten_bb.replace(/biên bản /gi, '').trim()}</option>`;
             });
+
+            document.getElementById('colFilter').innerHTML = filterHtml;
 
             renderKPIs(totalActualOverall, totalReqCurrentOverall, totalReqYearOverall, parseInt(year));
             renderHeader(data.config);
             renderBody(data.data, data.config);
+            
+            // Chạy lại bộ lọc đề phòng trường hợp người dùng đang chọn bộ lọc mà Load lại năm
+            filterColumns(); 
         }
 
         function renderKPIs(actual, reqCurrent, reqYear, selectedYear) {
@@ -163,12 +182,7 @@
                 
                 config.forEach(c => {
                     const r = row.reports[c.bbkt_id];
-                    
-                    // LÕI FIX LỖI Ở ĐÂY: Kết hợp 2 điều kiện 
-                    // 1. Chưa đủ KPI thực tế (VD: 0 < 1)
-                    // 2. HOẶC đã đủ KPI nhưng cờ is_compliant báo FALSE do spam/vi phạm chu kỳ
                     const isMissing = (r.actual < r.required) || (r.is_compliant === false);
-                    
                     const bgClass = isMissing ? 'bg-yellow-100 hover:brightness-95' : 'bg-transparent hover:bg-slate-100';
                     const textClass = isMissing ? 'text-yellow-800' : 'text-slate-600';
                     const safeDetails = encodeURIComponent(JSON.stringify(r.details));
@@ -183,6 +197,40 @@
                 html += `</tr>`;
             });
             document.getElementById('tbody').innerHTML = html;
+        }
+
+        // --- HÀM XỬ LÝ LỌC CỘT ĐỘNG ---
+        function filterColumns() {
+            const selectedIdx = document.getElementById("colFilter").value;
+            const table = document.getElementById("reportTable");
+            const rows = table.getElementsByTagName("tr");
+
+            // Lặp qua từng dòng của bảng (bao gồm cả dòng Header)
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].children; // Các thẻ th hoặc td
+                // Cột 0 luôn là Tên đường dây (được giữ lại)
+                for (let j = 1; j < cells.length; j++) {
+                    // Nếu chọn ALL hoặc đúng thứ tự cột đang chọn thì hiện
+                    if (selectedIdx === "ALL" || parseInt(selectedIdx) === (j - 1)) {
+                        cells[j].style.display = "";
+                    } else {
+                        // Cột không được chọn thì ẩn đi
+                        cells[j].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function filterTable() {
+            const input = document.getElementById("nameFilter").value.toUpperCase();
+            const tr = document.getElementById("tbody").getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    let textValue = td.textContent || td.innerText;
+                    tr[i].style.display = textValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
+                }
+            }
         }
 
         function showDetails(maThietBi, bbktId, lineName, reportName, encodedDetails) {
@@ -289,18 +337,6 @@
                 status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi: ' + err.message;
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i> Thử lại';
-            }
-        }
-
-        function filterTable() {
-            const input = document.getElementById("nameFilter").value.toUpperCase();
-            const tr = document.getElementById("tbody").getElementsByTagName("tr");
-            for (let i = 0; i < tr.length; i++) {
-                let td = tr[i].getElementsByTagName("td")[0];
-                if (td) {
-                    let textValue = td.textContent || td.innerText;
-                    tr[i].style.display = textValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
-                }
             }
         }
 
