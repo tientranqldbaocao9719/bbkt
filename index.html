@@ -8,57 +8,51 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { overflow: hidden; } /* Chống cuộn toàn trang, chỉ cuộn bảng */
+        body { overflow: hidden; } 
         .modal { transition: opacity 0.2s ease; }
         body.modal-active { overflow: hidden; }
         
-        /* CẤU TRÚC BẢNG CHUẨN EXCEL */
         .table-container { height: calc(100vh - 150px); overflow: auto; -webkit-overflow-scrolling: touch; background: #fff; }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         
-        /* Tiêu đề cột */
-        th { background-color: #f8fafc; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 8px; font-size: 11px; text-transform: uppercase; font-weight: bold; text-align: center; line-height: 1.3; }
+        /* Cấu trúc Header bảng được bóp gọn và căn giữa */
+        th { background-color: #f8fafc; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 8px; text-align: center; vertical-align: middle; }
         
-        /* Ô dữ liệu */
         td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 0; height: 44px; }
         
-        /* Cột đầu tiên (Tên đường dây) được ghim cứng */
         .sticky-col { position: sticky; left: 0; z-index: 10; text-align: left; padding: 10px 12px; font-size: 13px; font-weight: 700; color: #334155; background-color: #ffffff; box-shadow: inset -1px 0 0 #cbd5e1; }
         th.sticky-col { z-index: 30; background-color: #f8fafc; }
 
-        /* Tùy chỉnh thanh cuộn siêu mượt */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Ẩn thanh cuộn cho dải KPI */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased h-screen flex flex-col">
 
-    <nav class="bg-slate-900 p-2 md:px-4 shadow z-50 shrink-0">
-        <div class="mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="text-white font-bold text-base md:text-lg flex items-center">
+    <nav class="bg-slate-900 p-3 md:px-5 shadow z-50 shrink-0">
+        <div class="mx-auto flex flex-wrap justify-between items-center gap-3">
+            <div class="text-white font-bold text-lg md:text-xl flex items-center tracking-wide">
                 <i class="fa-solid fa-bolt mr-2 text-blue-400"></i> APP QUẢN LÝ BÁO CÁO
             </div>
             
             <div class="flex items-center gap-3">
-                <div class="bg-slate-800 flex items-center rounded border border-slate-700 overflow-hidden">
-                    <span class="px-2 text-slate-400 text-xs font-medium hidden md:inline">Năm</span>
-                    <select id="yearPicker" class="p-1 md:p-1.5 bg-slate-700 text-white font-bold text-sm outline-none cursor-pointer" onchange="init()"></select>
+                <div class="bg-slate-800 flex items-center rounded border border-slate-600 overflow-hidden shadow-inner">
+                    <span class="px-3 text-slate-300 text-sm font-bold hidden md:inline bg-slate-800">Năm</span>
+                    <select id="yearPicker" class="p-1.5 md:p-2 bg-slate-700 text-white font-bold text-sm outline-none cursor-pointer" onchange="init()"></select>
                 </div>
-                <a href="admin.html" class="bg-red-600 text-white px-4 py-1.5 rounded shadow text-xs md:text-sm font-bold hover:bg-red-500 transition-colors">Admin</a>
+                <a href="admin.html" class="bg-red-600 text-white px-4 py-1.5 md:py-2 rounded shadow-md text-xs md:text-sm font-bold hover:bg-red-500 transition-colors">Admin</a>
             </div>
         </div>
     </nav>
 
-    <div class="bg-slate-800 border-b border-slate-700 py-2 px-3 overflow-x-auto hide-scrollbar shrink-0 shadow-inner">
-        <div id="summaryStats" class="flex gap-3 md:justify-center min-w-max">
-            <span class="text-slate-400 text-xs italic px-2">Đang tải thống kê...</span>
-        </div>
+    <div class="bg-slate-900 border-b border-slate-800 pb-3 pt-1 px-5 shrink-0 shadow-sm overflow-x-auto hide-scrollbar">
+        <div id="summaryStats" class="flex gap-3 md:justify-start min-w-max">
+            </div>
     </div>
 
     <div class="flex-1 flex flex-col min-h-0 bg-white">
@@ -67,7 +61,7 @@
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
                 <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Gõ tên đường dây để tìm nhanh..." class="pl-9 pr-3 py-1.5 w-full border border-slate-300 rounded focus:ring-2 focus:ring-blue-400 outline-none text-sm bg-slate-50">
             </div>
-            <div class="text-xs text-slate-600 font-medium whitespace-nowrap hidden sm:flex items-center gap-1.5">
+            <div class="text-xs text-slate-600 font-medium whitespace-nowrap hidden sm:flex items-center gap-1.5 pr-2">
                 <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Ô màu vàng là chưa nộp đủ
             </div>
         </div>
@@ -116,28 +110,70 @@
             
             if (error) { console.error(error); alert("Lỗi tải dữ liệu!"); return; }
 
+            // Xử lý logic gộp khối KPI và đẩy số liệu vào Cột
+            let totalActualOverall = 0;
+            let totalReqCurrentOverall = 0;
+            let totalReqYearOverall = 0;
+
+            data.config.forEach(c => {
+                c.colActual = 0;
+                c.colReqCurrent = data.data.length * c.required_count;
+                // Tính số lượng cần cho 12 tháng (cả năm)
+                c.colReqYear = data.data.length * (12 / c.tan_suat);
+
+                data.data.forEach(row => {
+                    c.colActual += row.reports[c.bbkt_id].actual;
+                });
+
+                totalActualOverall += c.colActual;
+                totalReqCurrentOverall += c.colReqCurrent;
+                totalReqYearOverall += c.colReqYear;
+            });
+
+            renderKPIs(totalActualOverall, totalReqCurrentOverall, totalReqYearOverall, parseInt(year));
             renderHeader(data.config);
             renderBody(data.data, data.config);
-            calculateSummary(data.data, data.config);
         }
 
+        // Render 2 cục KPI vuông vắn trên cùng
+        function renderKPIs(actual, reqCurrent, reqYear, selectedYear) {
+            const currentYear = new Date().getFullYear();
+            // Lấy tháng hiện tại hoặc 12 (nếu xem năm cũ)
+            const currentMonth = selectedYear < currentYear ? 12 : (selectedYear === currentYear ? new Date().getMonth() + 1 : 'Tương lai');
+
+            let statsHtml = `
+                <div class="border border-slate-500 bg-slate-800 px-4 py-2 rounded text-white shadow flex items-center gap-2">
+                    <span class="text-sm font-bold text-slate-200">Đến Tháng ${currentMonth}:</span>
+                    <span class="text-base font-black text-white">${actual}/${reqCurrent}</span>
+                </div>
+                <div class="border border-slate-500 bg-slate-800 px-4 py-2 rounded text-white shadow flex items-center gap-2">
+                    <span class="text-sm font-bold text-slate-200">Đến Tháng 12:</span>
+                    <span class="text-base font-black text-white">${actual}/${reqYear}</span>
+                </div>
+            `;
+            document.getElementById('summaryStats').innerHTML = statsHtml;
+        }
+
+        // Render Header: Chèn cục KPI xanh đen vào từng cột
         function renderHeader(config) {
             let html = `<tr>
                 <th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
                 html += `<th class="min-w-[110px]">
-                    <div class="text-slate-700 whitespace-normal">${c.ten_bb}</div>
-                    <div class="text-[9px] text-slate-500 mt-1 normal-case font-medium">Cần: ${c.required_count} bản</div>
+                    <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${c.ten_bb}</div>
+                    <div class="mt-2">
+                        <span class="inline-block bg-slate-800 text-blue-400 text-[11px] font-black px-2.5 py-1 rounded shadow-sm">${c.colActual}/${c.colReqCurrent}</span>
+                    </div>
                 </th>`;
             });
             html += `</tr>`;
             document.getElementById('thead').innerHTML = html;
         }
 
+        // Render Body: Vẫn giữ nguyên logic màu sắc phủ ô
         function renderBody(data, config) {
             let html = '';
             data.forEach(row => {
-                // Cột Tên Đường Dây: Dùng whitespace-normal để chữ dài tự động xuống hàng
                 html += `<tr class="hover:bg-blue-50/50 transition-colors">
                     <td class="sticky-col whitespace-normal leading-snug min-w-[200px] max-w-[300px]" title="${row.ten_duong_day}">${row.ten_duong_day}</td>`;
                 
@@ -145,7 +181,6 @@
                     const r = row.reports[c.bbkt_id];
                     const isMissing = r.actual < r.required;
                     
-                    // Logic màu sắc phủ kín toàn bộ thẻ TD
                     const bgClass = isMissing ? 'bg-yellow-100 hover:brightness-95' : 'bg-transparent hover:bg-slate-100';
                     const textClass = isMissing ? 'text-yellow-800' : 'text-slate-600';
                     const safeDetails = encodeURIComponent(JSON.stringify(r.details));
@@ -162,22 +197,7 @@
             document.getElementById('tbody').innerHTML = html;
         }
 
-        function calculateSummary(data, config) {
-            let statsHtml = '';
-            config.forEach(c => {
-                let totalActual = 0;
-                let totalRequired = data.length * c.required_count;
-                data.forEach(row => totalActual += row.reports[c.bbkt_id].actual);
-                
-                // Giao diện KPI dạng viên thuốc tinh tế
-                statsHtml += `<div class="flex items-center gap-2 bg-slate-700/50 px-2 py-1.5 rounded border border-slate-600 shadow-sm">
-                    <span class="text-[10px] text-slate-300 uppercase whitespace-nowrap">${c.ten_bb}</span>
-                    <span class="text-xs font-black text-blue-400 bg-slate-800 px-1.5 rounded">${totalActual}/${totalRequired}</span>
-                </div>`;
-            });
-            document.getElementById('summaryStats').innerHTML = statsHtml;
-        }
-
+        // Modal Form xử lý Nộp báo cáo
         function showDetails(maThietBi, bbktId, lineName, reportName, encodedDetails) {
             document.getElementById('modalTitle').innerText = reportName;
             const details = JSON.parse(decodeURIComponent(encodedDetails));
@@ -185,13 +205,12 @@
             
             let html = `<div class="text-[13px] text-slate-700 font-bold bg-slate-100 p-3 rounded-lg border border-slate-200 mb-3"><i class="fa-solid fa-location-dot mr-1.5 text-blue-500"></i> ${lineName}</div>`;
             
-            // DANH SÁCH LỊCH SỬ NỘP (Dán nhãn theo Tháng)
             if (details.length === 0) {
                 html += '<p class="text-center text-slate-400 italic py-4 text-xs border-b border-dashed border-slate-300 mb-4">Chưa có dữ liệu nộp nào.</p>';
             } else {
                 html += '<div class="max-h-48 overflow-y-auto mb-4 border-b border-dashed border-slate-300 pb-4 space-y-2">';
                 details.forEach((d) => {
-                    const month = parseInt(d.ngay.split('/')[1]); // Rút trích đúng Tháng nộp
+                    const month = parseInt(d.ngay.split('/')[1]); 
                     
                     html += `<div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
                         <div>
@@ -206,7 +225,6 @@
                 html += '</div>';
             }
 
-            // FORM NỘP BỔ SUNG TRỰC TIẾP
             html += `
             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <p class="text-[13px] font-black text-blue-800 uppercase mb-3"><i class="fa-solid fa-cloud-arrow-up mr-1 text-base"></i> Nộp Bổ Sung</p>
