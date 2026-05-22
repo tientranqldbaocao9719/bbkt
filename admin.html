@@ -10,7 +10,7 @@
     <style>
         .sticky-col { position: sticky; left: 0; background-color: #ffffff; z-index: 20; border-right: 1px solid #e2e8f0; }
         .sticky-header { position: sticky; top: 0; z-index: 30; }
-        .table-container { height: calc(100vh - 140px); overflow: auto; -webkit-overflow-scrolling: touch; }
+        .table-container { height: calc(100vh - 100px); overflow: auto; -webkit-overflow-scrolling: touch; }
         td, th { padding: 10px 12px; font-size: 13px; text-align: center; white-space: nowrap; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -20,24 +20,22 @@
 </head>
 <body class="bg-slate-50 font-sans leading-tight text-slate-800 antialiased h-screen overflow-hidden flex flex-col">
 
-    <nav class="bg-slate-900 p-2 md:px-4 shadow z-50 shrink-0 border-b-2 border-red-500">
+    <nav class="bg-slate-900 p-3 md:px-5 shadow z-50 shrink-0 border-b-2 border-red-500">
         <div class="mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="text-white font-bold text-base md:text-lg flex items-center">
                 <i class="fa-solid fa-user-shield mr-2 text-red-400"></i> QUẢN TRỊ VIÊN (ADMIN)
             </div>
             
             <div class="flex items-center gap-2">
-                <a href="index.html" class="bg-slate-700 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Tháng</a>
-                <a href="nam.html" class="bg-slate-700 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Năm</a>
-                <a href="upload.html" class="bg-slate-700 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors">Nộp Mới</a>
-                <span class="bg-red-600 text-white px-3 py-1.5 rounded shadow text-xs md:text-sm font-bold ml-2">Duyệt File</span>
+                <a href="index.html" class="bg-slate-700 text-white px-4 py-2 rounded shadow-md text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại Bảng Tổng Hợp
+                </a>
             </div>
         </div>
     </nav>
 
     <div class="p-2 md:p-4 w-full flex-1 flex flex-col min-h-0">
         <div class="bg-white rounded shadow-md flex flex-col h-full border border-slate-200 overflow-hidden relative">
-            
             <div class="table-container w-full bg-white relative flex-1">
                 <table class="w-full text-left border-collapse" id="adminTable">
                     <thead class="sticky-header shadow-sm bg-slate-100 uppercase text-[11px] text-slate-600 tracking-wide">
@@ -60,12 +58,11 @@
     <script>
         // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const supabaseKey = 'DÁN_ANON_KEY_CỦA_BẠN_VÀO_ĐÂY';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
 
         async function loadAdminData() {
             try {
-                // Sức mạnh của Supabase: Chỉ gọi 1 hàm duy nhất từ VIEW đã ghép sẵn
                 const { data, error } = await db.from('admin_recent_reports')
                                                 .select('*')
                                                 .limit(100);
@@ -77,7 +74,6 @@
                     html = `<tr><td colspan="5" class="p-10 text-center text-slate-500 font-bold">Chưa có biên bản nào trong hệ thống.</td></tr>`;
                 } else {
                     data.forEach(r => {
-                        // Dữ liệu r bây giờ đã có sẵn ten_duong_day và ten_bb từ Supabase trả về
                         const dDate = new Date(r.thoi_gian);
                         const dateStr = `${dDate.getDate().toString().padStart(2, '0')}/${(dDate.getMonth()+1).toString().padStart(2, '0')}/${dDate.getFullYear()}`;
 
@@ -111,20 +107,17 @@
             }
 
             try {
-                // Khi xóa, vẫn phải xóa ở bảng gốc bbkt (không xóa ở view được)
                 const { error } = await db.from('bbkt').delete().eq('baocao_id', baocao_id);
-                
                 if (error) throw error;
 
                 alert('✅ Đã xóa biên bản thành công!');
-                loadAdminData(); // Cập nhật lại view
+                loadAdminData(); 
                 
             } catch (err) {
                 alert('❌ Lỗi khi xóa: ' + err.message);
             }
         }
 
-        // Khởi động
         loadAdminData();
     </script>
 </body>
