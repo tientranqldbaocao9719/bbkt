@@ -15,9 +15,7 @@
         .table-container { height: calc(100vh - 150px); overflow: auto; -webkit-overflow-scrolling: touch; background: #fff; }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         
-        /* Cấu trúc Header bảng được bóp gọn và căn giữa */
         th { background-color: #f8fafc; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 8px; text-align: center; vertical-align: middle; }
-        
         td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 0; height: 44px; }
         
         .sticky-col { position: sticky; left: 0; z-index: 10; text-align: left; padding: 10px 12px; font-size: 13px; font-weight: 700; color: #334155; background-color: #ffffff; box-shadow: inset -1px 0 0 #cbd5e1; }
@@ -43,16 +41,17 @@
             <div class="flex items-center gap-3">
                 <div class="bg-slate-800 flex items-center rounded border border-slate-600 overflow-hidden shadow-inner">
                     <span class="px-3 text-slate-300 text-sm font-bold hidden md:inline bg-slate-800">Năm</span>
-                    <select id="yearPicker" class="p-1.5 md:p-2 bg-slate-700 text-white font-bold text-sm outline-none cursor-pointer" onchange="init()"></select>
+                    <input type="number" id="yearPicker" class="p-1.5 md:p-2 bg-slate-700 text-white font-bold text-sm outline-none cursor-pointer w-20 text-center" onchange="init()" onkeyup="if(event.key === 'Enter') init()">
                 </div>
-                <a href="admin.html" class="bg-red-600 text-white px-4 py-1.5 md:py-2 rounded shadow-md text-xs md:text-sm font-bold hover:bg-red-500 transition-colors">Admin</a>
+                <button onclick="checkAdminPassword()" class="bg-red-600 text-white px-4 py-1.5 md:py-2 rounded shadow-md text-xs md:text-sm font-bold hover:bg-red-500 transition-colors cursor-pointer">Admin</button>
             </div>
         </div>
     </nav>
 
     <div class="bg-slate-900 border-b border-slate-800 pb-3 pt-1 px-5 shrink-0 shadow-sm overflow-x-auto hide-scrollbar">
         <div id="summaryStats" class="flex gap-3 md:justify-start min-w-max">
-            </div>
+            <span class="text-slate-400 text-xs italic px-2">Đang tải thống kê...</span>
+        </div>
     </div>
 
     <div class="flex-1 flex flex-col min-h-0 bg-white">
@@ -70,7 +69,7 @@
             <table id="reportTable">
                 <thead id="thead"></thead>
                 <tbody id="tbody" class="divide-y divide-slate-200">
-                    <tr><td colspan="10" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm border-none">Đang đồng bộ dữ liệu...</td></tr>
+                    <tr><td colspan="10" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm border-none">Supabase đang đồng bộ dữ liệu...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -86,7 +85,7 @@
                 </div>
             </div>
             <div id="modalBody" class="p-4 md:p-5 space-y-3 overflow-y-auto bg-white flex-1">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -97,20 +96,28 @@
         const db = supabase.createClient(supabaseUrl, supabaseKey);
         const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwOo1wv-sAjt7PrNSZuZHs3LyNALsHlNGzSmFnjyPz0bHwaYrZ_xal84exutrQLn8v5Uw/exec';
 
-        // Khởi tạo năm hiện tại
+        // Gán năm mặc định cho ô nhập
         const currentYear = new Date().getFullYear();
-        const yearPicker = document.getElementById('yearPicker');
-        for (let y = currentYear - 2; y <= currentYear + 4; y++) {
-            yearPicker.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+        document.getElementById('yearPicker').value = currentYear;
+
+        // Hàm kiểm tra Pass Admin
+        function checkAdminPassword() {
+            let pass = prompt("Vui lòng nhập mật khẩu quản trị viên:");
+            if (pass === "111986") {
+                window.location.href = "admin.html";
+            } else if (pass !== null) {
+                alert("Mật khẩu không chính xác!");
+            }
         }
 
         async function init() {
             const year = document.getElementById('yearPicker').value;
+            if(!year) return; // Tránh lỗi nếu người dùng xóa trắng ô năm
+
             const { data, error } = await db.rpc('get_yearly_report_summary', { target_year: parseInt(year) });
             
             if (error) { console.error(error); alert("Lỗi tải dữ liệu!"); return; }
 
-            // Xử lý logic gộp khối KPI và đẩy số liệu vào Cột
             let totalActualOverall = 0;
             let totalReqCurrentOverall = 0;
             let totalReqYearOverall = 0;
@@ -118,7 +125,6 @@
             data.config.forEach(c => {
                 c.colActual = 0;
                 c.colReqCurrent = data.data.length * c.required_count;
-                // Tính số lượng cần cho 12 tháng (cả năm)
                 c.colReqYear = data.data.length * (12 / c.tan_suat);
 
                 data.data.forEach(row => {
@@ -135,32 +141,30 @@
             renderBody(data.data, data.config);
         }
 
-        // Render 2 cục KPI vuông vắn trên cùng
         function renderKPIs(actual, reqCurrent, reqYear, selectedYear) {
             const currentYear = new Date().getFullYear();
-            // Lấy tháng hiện tại hoặc 12 (nếu xem năm cũ)
             const currentMonth = selectedYear < currentYear ? 12 : (selectedYear === currentYear ? new Date().getMonth() + 1 : 'Tương lai');
 
             let statsHtml = `
-                <div class="border border-slate-500 bg-slate-800 px-4 py-2 rounded text-white shadow flex items-center gap-2">
-                    <span class="text-sm font-bold text-slate-200">Đến Tháng ${currentMonth}:</span>
-                    <span class="text-base font-black text-white">${actual}/${reqCurrent}</span>
+                <div class="border border-slate-500 bg-slate-800 px-4 py-2 rounded text-white shadow flex items-center gap-2 hover:bg-slate-700 transition-colors">
+                    <span class="text-sm font-bold text-slate-300">Đến Tháng ${currentMonth}:</span>
+                    <span class="text-base font-black text-blue-400">${actual}/${reqCurrent}</span>
                 </div>
-                <div class="border border-slate-500 bg-slate-800 px-4 py-2 rounded text-white shadow flex items-center gap-2">
-                    <span class="text-sm font-bold text-slate-200">Đến Tháng 12:</span>
-                    <span class="text-base font-black text-white">${actual}/${reqYear}</span>
+                <div class="border border-slate-500 bg-slate-800 px-4 py-2 rounded text-white shadow flex items-center gap-2 hover:bg-slate-700 transition-colors">
+                    <span class="text-sm font-bold text-slate-300">Cả Năm:</span>
+                    <span class="text-base font-black text-blue-400">${actual}/${reqYear}</span>
                 </div>
             `;
             document.getElementById('summaryStats').innerHTML = statsHtml;
         }
 
-        // Render Header: Chèn cục KPI xanh đen vào từng cột
         function renderHeader(config) {
             let html = `<tr>
                 <th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
-                html += `<th class="min-w-[110px]">
-                    <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${c.ten_bb}</div>
+                const shortName = c.ten_bb.replace(/biên bản /gi, '').trim();
+                html += `<th class="min-w-[100px]">
+                    <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${shortName}</div>
                     <div class="mt-2">
                         <span class="inline-block bg-slate-800 text-blue-400 text-[11px] font-black px-2.5 py-1 rounded shadow-sm">${c.colActual}/${c.colReqCurrent}</span>
                     </div>
@@ -170,7 +174,6 @@
             document.getElementById('thead').innerHTML = html;
         }
 
-        // Render Body: Vẫn giữ nguyên logic màu sắc phủ ô
         function renderBody(data, config) {
             let html = '';
             data.forEach(row => {
@@ -197,7 +200,6 @@
             document.getElementById('tbody').innerHTML = html;
         }
 
-        // Modal Form xử lý Nộp báo cáo
         function showDetails(maThietBi, bbktId, lineName, reportName, encodedDetails) {
             document.getElementById('modalTitle').innerText = reportName;
             const details = JSON.parse(decodeURIComponent(encodedDetails));
