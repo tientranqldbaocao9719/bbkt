@@ -55,7 +55,7 @@
                 <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Gõ tên đường dây để tìm nhanh..." class="pl-9 pr-3 py-1.5 w-full border border-slate-300 rounded focus:ring-2 focus:ring-blue-400 outline-none text-sm bg-slate-50">
             </div>
             <div class="text-xs text-slate-600 font-medium whitespace-nowrap hidden sm:flex items-center gap-1.5 pr-2">
-                <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Ô màu vàng là quá hạn chu kỳ
+                <span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Ô màu vàng là chưa đủ số lượng hoặc quá hạn chu kỳ
             </div>
         </div>
 
@@ -85,9 +85,9 @@
 
     <script>
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const supabaseKey = 'DÁN_ANON_KEY_CỦA_BẠN_VÀO_ĐÂY';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwOo1wv-sAjt7PrNSZuZHs3LyNALsHlNGzSmFnjyPz0bHwaYrZ_xal84exutrQLn8v5Uw/exec';
+        const googleScriptUrl = 'DÁN_LINK_GOOGLE_SCRIPT_CỦA_BẠN_VÀO_ĐÂY';
 
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
@@ -164,8 +164,10 @@
                 config.forEach(c => {
                     const r = row.reports[c.bbkt_id];
                     
-                    // SỬ DỤNG TRÍ THÔNG MINH TỪ SUPABASE: Thay vì đếm số lượng r.actual < r.required, giờ gọi cờ is_compliant
-                    const isMissing = !r.is_compliant;
+                    // LÕI FIX LỖI Ở ĐÂY: Kết hợp 2 điều kiện 
+                    // 1. Chưa đủ KPI thực tế (VD: 0 < 1)
+                    // 2. HOẶC đã đủ KPI nhưng cờ is_compliant báo FALSE do spam/vi phạm chu kỳ
+                    const isMissing = (r.actual < r.required) || (r.is_compliant === false);
                     
                     const bgClass = isMissing ? 'bg-yellow-100 hover:brightness-95' : 'bg-transparent hover:bg-slate-100';
                     const textClass = isMissing ? 'text-yellow-800' : 'text-slate-600';
