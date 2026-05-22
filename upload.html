@@ -9,88 +9,87 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }</style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center justify-center py-10 px-4">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center justify-center py-6 px-4">
 
-    <div class="w-full max-w-2xl mb-6">
-        <a href="index.html" class="inline-flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-lg transition-colors bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200">
+    <div class="w-full max-w-xl mb-4">
+        <a href="index.html" class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold text-sm transition-colors bg-white px-4 py-2 rounded shadow-sm border border-slate-200">
             <i class="fa-solid fa-arrow-left"></i> Quay lại Bảng Tổng Hợp
         </a>
     </div>
 
-    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-slate-100 w-full max-w-2xl relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+    <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg border border-slate-200 w-full max-w-xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
 
-        <div class="text-center mb-10 mt-4">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 text-3xl mb-4 shadow-inner">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-            </div>
-            <h2 class="text-3xl font-black text-slate-800">Nộp Biên Bản Kiểm Tra</h2>
-            <p class="text-slate-500 mt-2 text-lg">Cập nhật tài liệu mới vào hệ thống quản lý</p>
+        <div class="text-center mb-6">
+            <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wide">Nộp Biên Bản Kiểm Tra</h2>
+            <p class="text-slate-500 text-xs mt-1">Hệ thống sẽ tự động đồng bộ và đổi tên file khoa học trên Google Drive</p>
         </div>
         
-        <div id="errorBox" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 px-5 py-4 rounded-lg mb-6 text-base font-medium shadow-sm flex items-start gap-3">
-            <i class="fa-solid fa-circle-exclamation mt-1"></i> <span id="errorText"></span>
+        <div id="errorBox" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded mb-4 text-xs font-medium flex items-start gap-2">
+            <i class="fa-solid fa-circle-exclamation mt-0.5"></i> <span id="errorText"></span>
         </div>
 
-        <form id="uploadForm" class="space-y-6">
+        <form id="uploadForm" class="space-y-4">
             
-            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                <label class="block text-base font-bold text-slate-700 mb-2"><i class="fa-regular fa-calendar-check text-blue-500 mr-2"></i> Ngày đi kiểm tra thực tế</label>
-                <input type="date" id="ngay_kiem_tra" required class="block w-full p-4 border border-slate-300 rounded-xl bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-lg font-medium outline-none transition-all cursor-pointer shadow-sm">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ngày đi kiểm tra thực tế</label>
+                <input type="date" id="ngay_kiem_tra" required class="block w-full p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-400 text-sm font-medium outline-none shadow-sm">
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-base font-bold text-slate-700 mb-2">Tên Đường Dây</label>
-                    <select id="ma_thiet_bi" required class="block w-full p-4 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-base font-medium outline-none transition-all shadow-sm">
-                        <option value="">-- Đang tải danh sách... --</option>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Đường Dây</label>
+                    <select id="ma_thiet_bi" required class="block w-full p-2.5 border border-slate-300 rounded bg-slate-50 focus:bg-white text-sm outline-none shadow-sm">
+                        <option value="">-- Chọn đường dây --</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-base font-bold text-slate-700 mb-2">Loại Biên Bản</label>
-                    <select id="bbkt_id" required class="block w-full p-4 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-base font-medium outline-none transition-all shadow-sm">
-                        <option value="">-- Đang tải danh sách... --</option>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Loại Biên Bản</label>
+                    <select id="bbkt_id" required class="block w-full p-2.5 border border-slate-300 rounded bg-slate-50 focus:bg-white text-sm outline-none shadow-sm">
+                        <option value="">-- Chọn loại biên bản --</option>
                     </select>
                 </div>
             </div>
 
-            <div class="mt-8">
-                <label class="block text-base font-bold text-slate-700 mb-2">Đính kèm File báo cáo (Excel, PDF, Hình ảnh)</label>
-                <div class="border-2 border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-colors">
-                    <input type="file" id="fileInput" required class="block w-full text-base text-slate-500 file:mr-6 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer transition-colors shadow-sm">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Chọn File báo cáo</label>
+                <div class="border border-dashed border-slate-300 rounded p-3 bg-slate-50 hover:bg-slate-100 transition-colors">
+                    <input type="file" id="fileInput" required class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer transition-colors">
                 </div>
             </div>
 
-            <button type="submit" id="btnSubmit" class="w-full bg-slate-900 text-white font-black text-xl py-5 px-6 rounded-2xl hover:bg-blue-600 hover:shadow-lg transition-all flex justify-center items-center gap-3 mt-4">
+            <button type="submit" id="btnSubmit" class="w-full bg-slate-900 text-white font-bold text-sm py-3 px-4 rounded hover:bg-blue-600 transition-all flex justify-center items-center gap-2 mt-2">
                 <i class="fa-solid fa-paper-plane"></i> XÁC NHẬN TẢI LÊN
             </button>
 
-            <div id="statusContainer" class="hidden text-center p-4 rounded-xl font-bold text-lg border"></div>
+            <div id="statusContainer" class="hidden text-center p-3 rounded font-bold text-sm border"></div>
         </form>
     </div>
 
     <script>
         document.getElementById('ngay_kiem_tra').value = new Date().toISOString().split('T')[0];
 
-        // CẤU HÌNH API
+        // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co'; 
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbz4IarWoVEgCHl-UD1Kobk6oGCzVx7XsPkoVHmSoCQYeHfHg-ulrHSzwIBeNkTP9NAT3A/exec';
+        
+        // Nhớ dán link Google Web App mới triển khai của bạn vào đây
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyqrGn44SxaxJ-P0CCtvToYnIKfTp9gsrGtLayCmpp5PTk23F6zFWdWenW1JubpkJ0hYQ/exec';
 
         async function loadDropdowns() {
             try {
                 const { data: ddayData, error: err1 } = await db.from('dday').select('*').order('ten_duong_day');
                 if (err1) throw err1;
                 const ddaySelect = document.getElementById('ma_thiet_bi');
-                ddaySelect.innerHTML = '<option value="">-- Click để chọn --</option>';
+                ddaySelect.innerHTML = '<option value="">-- Chọn đường dây --</option>';
                 ddayData.forEach(item => ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`);
 
                 const { data: dmbbData, error: err2 } = await db.from('dmbb').select('*').order('bbkt_id');
                 if (err2) throw err2;
                 const dmbbSelect = document.getElementById('bbkt_id');
-                dmbbSelect.innerHTML = '<option value="">-- Click để chọn --</option>';
+                dmbbSelect.innerHTML = '<option value="">-- Chọn loại biên bản --</option>';
                 dmbbData.forEach(item => dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`);
             } catch (err) {
                 const errBox = document.getElementById('errorBox');
@@ -111,8 +110,7 @@
             const file = document.getElementById('fileInput').files[0];
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ DỮ LIỆU...';
-            btn.classList.add('opacity-75');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TẢI FILE LÊN DRIVE...';
             statusContainer.classList.add('hidden');
 
             try {
@@ -120,14 +118,24 @@
                 reader.onload = async function() {
                     const base64Data = reader.result.split(',')[1];
                     
+                    // Gửi thêm thông tin ma_thiet_bi, bbkt_id, ngay_kiem_tra sang Google Script để đặt tên file
                     const response = await fetch(googleScriptUrl, {
                         method: 'POST',
-                        body: JSON.stringify({ fileName: file.name, mimeType: file.type, base64: base64Data })
+                        body: JSON.stringify({ 
+                            fileName: file.name, 
+                            mimeType: file.type, 
+                            base64: base64Data,
+                            ma_thiet_bi: ma_thiet_bi,
+                            bbkt_id: bbkt_id,
+                            ngay_kiem_tra: ngay_kiem_tra
+                        })
                     });
                     
                     const result = await response.json();
                     
                     if(result.status === 'success') {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG GHI NHẬN HỆ THỐNG...';
+                        
                         const { error } = await db.from('bbkt').insert([
                             { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url, thoi_gian: ngay_kiem_tra }
                         ]);
@@ -135,8 +143,8 @@
                         if(error) throw error;
 
                         statusContainer.classList.remove('hidden');
-                        statusContainer.className = "text-center p-5 rounded-xl font-bold text-lg border bg-green-50 border-green-200 text-green-700";
-                        statusContainer.innerHTML = '<i class="fa-solid fa-circle-check text-2xl mb-2 block"></i> Tải lên thành công! Báo cáo đã được ghi nhận.';
+                        statusContainer.className = "text-center p-3 rounded font-bold text-sm bg-green-50 border border-green-200 text-green-700";
+                        statusContainer.innerHTML = '✅ Tải lên thành công và đã tự đổi tên file!';
                         
                         document.getElementById('ma_thiet_bi').value = "";
                         document.getElementById('bbkt_id').value = "";
@@ -145,19 +153,16 @@
                         throw new Error(result.message);
                     }
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> TẢI LÊN TIẾP TỤC';
-                    btn.classList.remove('opacity-75');
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> XÁC NHẬN TẢI LÊN';
                 };
                 reader.readAsDataURL(file);
                 
             } catch (err) {
                 statusContainer.classList.remove('hidden');
-                statusContainer.className = "text-center p-5 rounded-xl font-bold text-lg border bg-red-50 border-red-200 text-red-700";
-                statusContainer.innerHTML = '<i class="fa-solid fa-circle-xmark text-2xl mb-2 block"></i> Lỗi: ' + err.message;
-                
+                statusContainer.className = "text-center p-3 rounded font-bold text-sm bg-red-50 border border-red-200 text-red-700";
+                statusContainer.innerHTML = '❌ Lỗi: ' + err.message;
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> THỬ LẠI';
-                btn.classList.remove('opacity-75');
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> XÁC NHẬN TẢI LÊN';
             }
         });
     </script>
