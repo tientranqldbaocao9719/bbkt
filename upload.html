@@ -12,7 +12,7 @@
     <div class="max-w-md mx-auto">
         <div class="mb-6 flex justify-center space-x-4">
             <a href="index.html" class="bg-white text-blue-600 px-6 py-2 rounded shadow font-bold hover:bg-gray-100 border border-blue-600">📊 Bảng Tổng Hợp</a>
-            <a href="upload.html" class="bg-blue-600 text-white px-6 py-2 rounded shadow font-bold hover:bg-blue-700">📤 Nộp Báo Cáo Mới</a>
+            <a href="upload.html" class="bg-blue-600 text-white px-6 py-2 rounded shadow font-bold hover:bg-blue-700">📤 Nộp Báo Cáo</a>
         </div>
 
         <div class="bg-white p-8 rounded-lg shadow-xl border-t-4 border-blue-600">
@@ -21,6 +21,12 @@
             <div id="errorBox" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-medium"></div>
 
             <form id="uploadForm" class="space-y-4">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Ngày đi kiểm tra thực tế</label>
+                    <input type="date" id="ngay_kiem_tra" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-yellow-50 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Chọn Đường Dây</label>
                     <select id="ma_thiet_bi" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
@@ -49,47 +55,45 @@
     </div>
 
     <script>
-        // 1. CẤU HÌNH API
-        const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co'; 
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
-        const db = supabase.createClient(supabaseUrl, supabaseKey);
-        
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbz4IarWoVEgCHl-UD1Kobk6oGCzVx7XsPkoVHmSoCQYeHfHg-ulrHSzwIBeNkTP9NAT3A/exec';
+        // Mặc định ngày kiểm tra là ngày hôm nay
+        document.getElementById('ngay_kiem_tra').value = new Date().toISOString().split('T')[0];
 
-        // 2. TẢI DANH SÁCH DROPDOWN
+        // --- CẤU HÌNH API ---
+        const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co'; 
+        const supabaseKey = 'DÁN_ANON_KEY_CỦA_BẠN_VÀO_ĐÂY';
+        const db = supabase.createClient(supabaseUrl, supabaseKey);
+        const googleScriptUrl = 'DÁN_LINK_GOOGLE_SCRIPT_CỦA_BẠN_VÀO_ĐÂY';
+
+        // TẢI DANH SÁCH DROPDOWN
         async function loadDropdowns() {
             try {
                 const { data: ddayData, error: err1 } = await db.from('dday').select('*').order('ten_duong_day');
                 if (err1) throw err1;
-
                 const ddaySelect = document.getElementById('ma_thiet_bi');
                 ddaySelect.innerHTML = '<option value="">-- Chọn đường dây --</option>';
-                ddayData.forEach(item => {
-                    ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`;
-                });
+                ddayData.forEach(item => ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`);
 
                 const { data: dmbbData, error: err2 } = await db.from('dmbb').select('*').order('bbkt_id');
                 if (err2) throw err2;
-
                 const dmbbSelect = document.getElementById('bbkt_id');
                 dmbbSelect.innerHTML = '<option value="">-- Chọn loại biên bản --</option>';
-                dmbbData.forEach(item => {
-                    dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`;
-                });
+                dmbbData.forEach(item => dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`);
 
             } catch (err) {
                 const errBox = document.getElementById('errorBox');
                 errBox.classList.remove('hidden');
-                errBox.innerText = "Lỗi kết nối CSDL: " + err.message + "\n(Gợi ý: Hãy chắc chắn bạn đã tắt khóa RLS cho các bảng trong Supabase).";
+                errBox.innerText = "Lỗi kết nối CSDL: " + err.message;
             }
         }
         loadDropdowns();
 
-        // 3. XỬ LÝ KHI BẤM NÚT TẢI LÊN
+        // XỬ LÝ KHI BẤM NÚT TẢI LÊN
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
             const status = document.getElementById('statusMsg');
+            
+            const ngay_kiem_tra = document.getElementById('ngay_kiem_tra').value; // Lấy ngày người dùng nhập
             const ma_thiet_bi = document.getElementById('ma_thiet_bi').value;
             const bbkt_id = document.getElementById('bbkt_id').value;
             const file = document.getElementById('fileInput').files[0];
@@ -114,15 +118,20 @@
                     if(result.status === 'success') {
                         btn.innerText = "⏳ Đang lưu dữ liệu vào hệ thống...";
                         
+                        // Truyền thêm thoi_gian vào Supabase
                         const { error } = await db.from('bbkt').insert([
-                            { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url }
+                            { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url, thoi_gian: ngay_kiem_tra }
                         ]);
 
                         if(error) throw error;
 
                         status.innerText = "✅ Tải lên thành công! Hãy qua bảng tổng hợp để kiểm tra.";
                         status.className = "text-center text-sm font-medium mt-2 text-green-600";
-                        document.getElementById('uploadForm').reset();
+                        
+                        // Reset form nhưng giữ lại ngày vừa nhập cho tiện
+                        document.getElementById('ma_thiet_bi').value = "";
+                        document.getElementById('bbkt_id').value = "";
+                        document.getElementById('fileInput').value = "";
                     } else {
                         throw new Error(result.message);
                     }
