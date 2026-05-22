@@ -3,118 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Theo Dõi Biên Bản Kiểm Tra</title>
+    <title>Hệ Thống Quản Lý Báo Cáo Kỹ Thuật</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* CSS Xử lý ghim tiêu đề và đường viền bảng giống hệt Excel */
-        .table-container { max-height: 80vh; overflow-y: auto; overflow-x: auto; }
-        table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; }
-        th { 
-            position: sticky; top: 0; background-color: #e5e7eb; z-index: 10; 
-            padding: 12px; border-bottom: 2px solid #9ca3af; border-right: 1px solid #d1d5db; font-weight: bold;
-        }
-        /* Ghim cột đầu tiên (Tên đường dây) khi cuộn ngang */
-        th:first-child, td:first-child {
-            position: sticky; left: 0; background-color: #f9fafb; z-index: 20;
-            border-right: 2px solid #9ca3af; box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        }
-        th:first-child { z-index: 30; background-color: #e5e7eb; }
-        td { padding: 10px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; text-align: center; }
-        tr:hover td { background-color: #f3f4f6; }
+        .sticky-col { position: sticky; left: 0; background-color: white; z-index: 20; border-right: 2px solid #cbd5e1; }
+        .sticky-header { position: sticky; top: 0; z-index: 30; }
+        .cell-yellow { background-color: #fef9c3; } /* Màu vàng cảnh báo thiếu */
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+        .table-container { height: calc(100vh - 250px); overflow: auto; }
     </style>
 </head>
-<body class="bg-gray-100 p-4 md:p-8">
+<body class="bg-slate-100 font-sans leading-normal tracking-normal text-slate-900">
 
-    <div class="max-w-screen-2xl mx-auto">
-        <div class="mb-6 flex justify-center space-x-4">
-            <a href="index.html" class="bg-blue-600 text-white px-6 py-2 rounded shadow font-bold hover:bg-blue-700">📊 Bảng Tổng Hợp</a>
-            <a href="upload.html" class="bg-white text-blue-600 px-6 py-2 rounded shadow font-bold hover:bg-gray-100 border border-blue-600">📤 Nộp Báo Cáo Mới</a>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-xl p-6 border-t-4 border-blue-600">
-            <h1 class="text-2xl font-bold text-gray-800 mb-6 uppercase text-center">Tổng hợp tiến độ nộp biên bản kiểm tra</h1>
+    <nav class="bg-slate-800 p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <div class="text-white font-bold text-xl mb-4 md:mb-0">
+                <i class="fa-solid fa-tower-transmission mr-2 text-blue-400"></i> TRẠM QUẢN LÝ BÁO CÁO
+            </div>
             
-            <div class="table-container border border-gray-300 rounded">
-                <table id="mainTable">
-                    <thead id="tableHead">
-                        <tr><th>Đang tải cấu trúc bảng...</th></tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <tr><td class="text-center py-8 text-blue-600 font-bold">Đang tính toán dữ liệu...</td></tr>
+            <div id="summaryStats" class="flex space-x-6 text-white text-xs md:text-sm">
+                </div>
+
+            <div class="flex space-x-2 mt-4 md:mt-0">
+                <input type="number" id="yearPicker" value="2026" class="p-2 rounded bg-slate-700 text-white border-none w-20 font-bold" onchange="init()">
+                <a href="upload.html" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-bold shadow transition"><i class="fa-solid fa-plus mr-1"></i> Nộp Mới</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="p-4 md:p-8">
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div class="p-4 border-b bg-slate-50 flex flex-col md:flex-row items-center gap-4">
+                <div class="relative w-full md:w-96">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Lọc theo tên đường dây..." class="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none">
+                </div>
+                <div class="text-sm text-slate-500 font-medium">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Ô <span class="bg-yellow-100 px-2 py-0.5 rounded border border-yellow-300">màu vàng</span> là chưa đủ chỉ tiêu năm. Click vào số để xem chi tiết.
+                </div>
+            </div>
+
+            <div class="table-container border-t">
+                <table class="w-full text-left border-collapse" id="reportTable">
+                    <thead class="sticky-header shadow-md" id="thead">
+                        </thead>
+                    <tbody id="tbody" class="divide-y divide-slate-200">
+                        <tr><td colspan="10" class="p-20 text-center font-bold text-blue-500 text-xl animate-pulse">Đang Supabase xử lý dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <div id="modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-[100]">
+        <div class="modal-overlay absolute w-full h-full bg-black opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <p class="text-xl font-bold text-slate-800" id="modalTitle">Chi tiết nộp báo cáo</p>
+                    <div class="cursor-pointer z-50" onclick="toggleModal()"><i class="fa-solid fa-xmark text-2xl"></i></div>
+                </div>
+                <div id="modalBody" class="py-4 space-y-3 max-h-96 overflow-auto">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 1. KẾT NỐI API (Nhớ thay Key và URL của bạn)
+        // CẤU HÌNH API
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
 
-        async function loadData() {
-            try {
-                // Tải dữ liệu 3 bảng cùng lúc (Lấy bbkt mới nhất đưa lên đầu)
-                const [resDday, resDmbb, resBbkt] = await Promise.all([
-                    db.from('dday').select('*').order('ten_duong_day'),
-                    db.from('dmbb').select('*').order('bbkt_id'),
-                    db.from('bbkt').select('*').order('thoi_gian', { ascending: false })
-                ]);
+        let reportData = [];
 
-                if (resDday.error || resDmbb.error || resBbkt.error) throw new Error("Lỗi đọc dữ liệu từ Supabase");
+        async function init() {
+            const year = document.getElementById('yearPicker').value;
+            // Gọi hàm xử lý Server-side RPC từ Supabase
+            const { data, error } = await db.rpc('get_yearly_report_summary', { target_year: parseInt(year) });
+            
+            if (error) {
+                console.error(error);
+                alert("Lỗi tải dữ liệu. Hãy chắc chắn bạn đã tạo Hàm Function trên Supabase.");
+                return;
+            }
 
-                // --- TẠO TIÊU ĐỀ BẢNG (Gắn luôn tần suất vào tiêu đề) ---
-                let thHtml = `<tr><th class="text-left w-72 uppercase">Tên Đường Dây</th>`;
-                resDmbb.data.forEach(bb => {
-                    thHtml += `<th>${bb.ten_bb}<br><span class="text-xs text-gray-500 font-normal">(${bb.tan_suat} tháng/lần)</span></th>`;
-                });
-                thHtml += `</tr>`;
-                document.getElementById('tableHead').innerHTML = thHtml;
+            reportData = data.data;
+            renderHeader(data.config);
+            renderBody(data.data, data.config);
+            calculateSummary(data.data, data.config);
+        }
 
-                // --- TẠO THÂN BẢNG & TÍNH TOÁN HẠN NỘP ---
-                let tbHtml = '';
-                const now = new Date();
+        function renderHeader(config) {
+            let html = `<tr class="bg-slate-200 text-slate-700 uppercase text-xs">
+                <th class="p-4 sticky-col top-0">Tên Đường Dây</th>`;
+            config.forEach(c => {
+                html += `<th class="p-4 text-center">${c.ten_bb}<br><span class="text-[10px] lowercase font-normal opacity-70">Cần ${c.required_count} bản/năm</span></th>`;
+            });
+            html += `</tr>`;
+            document.getElementById('thead').innerHTML = html;
+        }
 
-                resDday.data.forEach(dd => {
-                    tbHtml += `<tr><td class="text-left font-medium text-gray-800 text-sm">${dd.ten_duong_day}</td>`;
+        function renderBody(data, config) {
+            let html = '';
+            data.forEach(row => {
+                html += `<tr class="hover:bg-slate-50 transition">
+                    <td class="p-4 font-bold text-sm sticky-col">${row.ten_duong_day}</td>`;
+                
+                config.forEach(c => {
+                    const r = row.reports[c.bbkt_id];
+                    const isMissing = r.actual < r.required;
+                    const cellClass = isMissing ? 'cell-yellow' : '';
                     
-                    resDmbb.data.forEach(bb => {
-                        // Tìm biên bản nộp GẦN NHẤT của đường dây này
-                        const report = resBbkt.data.find(r => r.ma_thiet_bi === dd.ma_thiet_bi && r.bbkt_id === bb.bbkt_id);
-                        
-                        if (!report) {
-                            tbHtml += `<td></td>`; // Để trống tinh tươm
-                        } else {
-                            const reportDate = new Date(report.thoi_gian);
-                            const diffMonths = (now.getFullYear() - reportDate.getFullYear()) * 12 + (now.getMonth() - reportDate.getMonth());
-                            const dateStr = `${reportDate.getDate()}/${reportDate.getMonth()+1}/${reportDate.getFullYear()}`;
-
-                            // So sánh số tháng chênh lệch với quy định
-                            if (diffMonths > bb.tan_suat) {
-                                // QUÁ HẠN (Màu đỏ)
-                                tbHtml += `<td class="bg-red-50 text-red-600 text-xs">
-                                    <span class="font-bold">⚠️ Quá hạn</span><br>
-                                    <a href="${report.file_url}" target="_blank" class="underline hover:text-red-800">File cũ (${dateStr})</a>
-                                </td>`;
-                            } else {
-                                // ĐÚNG HẠN (Màu xanh)
-                                tbHtml += `<td class="text-green-600 text-xs">
-                                    <a href="${report.file_url}" target="_blank" class="underline font-bold hover:text-green-800">✅ Xem (${dateStr})</a>
-                                </td>`;
-                            }
-                        }
-                    });
-                    tbHtml += `</tr>`;
+                    html += `<td class="p-4 text-center font-bold text-sm ${cellClass}">
+                        <button onclick='showDetails("${row.ten_duong_day}", "${c.ten_bb}", ${JSON.stringify(r.details)})' class="hover:scale-110 transition cursor-pointer">
+                            ${r.actual}/${r.required}
+                        </button>
+                    </td>`;
                 });
-                document.getElementById('tableBody').innerHTML = tbHtml;
+                html += `</tr>`;
+            });
+            document.getElementById('tbody').innerHTML = html;
+        }
 
-            } catch (err) {
-                document.getElementById('tableBody').innerHTML = `<tr><td class="text-red-500 font-bold p-4">❌ Lỗi: ${err.message}. Hãy kiểm tra kết nối mạng hoặc API Key.</td></tr>`;
+        function calculateSummary(data, config) {
+            let statsHtml = '';
+            config.forEach(c => {
+                let totalActual = 0;
+                let totalRequired = data.length * c.required_count;
+                data.forEach(row => totalActual += row.reports[c.bbkt_id].actual);
+                
+                statsHtml += `<div class="border-l border-slate-600 pl-4">
+                    <p class="opacity-70 text-[10px] uppercase">${c.ten_bb}</p>
+                    <p class="font-bold text-blue-400">${totalActual}/${totalRequired}</p>
+                </div>`;
+            });
+            document.getElementById('summaryStats').innerHTML = statsHtml;
+        }
+
+        function showDetails(lineName, reportName, details) {
+            document.getElementById('modalTitle').innerText = `${lineName} - ${reportName}`;
+            let html = '';
+            if (details.length === 0) {
+                html = '<p class="text-center text-slate-400 italic">Chưa có biên bản nào được nộp trong năm này.</p>';
+            } else {
+                details.forEach((d, i) => {
+                    html += `<div class="flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-200">
+                        <div>
+                            <p class="text-xs text-slate-500">Lần ${details.length - i}</p>
+                            <p class="font-bold">Ngày kiểm tra: ${d.ngay}</p>
+                        </div>
+                        <a href="${d.url}" target="_blank" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-blue-200"><i class="fa-solid fa-file-pdf mr-1"></i> Xem file</a>
+                    </div>`;
+                });
+            }
+            document.getElementById('modalBody').innerHTML = html;
+            toggleModal();
+        }
+
+        function filterTable() {
+            const input = document.getElementById("nameFilter").value.toUpperCase();
+            const tr = document.getElementById("tbody").getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    let textValue = td.textContent || td.innerText;
+                    tr[i].style.display = textValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
+                }
             }
         }
-        loadData();
+
+        function toggleModal() {
+            const body = document.querySelector('body');
+            const modal = document.getElementById('modal');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            body.classList.toggle('modal-active');
+        }
+
+        init();
     </script>
 </body>
 </html>
