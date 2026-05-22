@@ -3,105 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nộp Báo Cáo Kiểm Tra</title>
+    <title>Nộp Báo Cáo Kỹ Thuật</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }</style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center justify-center py-10 px-4">
 
-    <div class="max-w-md mx-auto">
-        <div class="mb-6 flex justify-center space-x-4">
-            <a href="index.html" class="bg-white text-blue-600 px-6 py-2 rounded shadow font-bold hover:bg-gray-100 border border-blue-600">📊 Bảng Tổng Hợp</a>
-            <a href="upload.html" class="bg-blue-600 text-white px-6 py-2 rounded shadow font-bold hover:bg-blue-700">📤 Nộp Báo Cáo</a>
+    <div class="w-full max-w-2xl mb-6">
+        <a href="index.html" class="inline-flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-lg transition-colors bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại Bảng Tổng Hợp
+        </a>
+    </div>
+
+    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-slate-100 w-full max-w-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+
+        <div class="text-center mb-10 mt-4">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 text-3xl mb-4 shadow-inner">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <h2 class="text-3xl font-black text-slate-800">Nộp Biên Bản Kiểm Tra</h2>
+            <p class="text-slate-500 mt-2 text-lg">Cập nhật tài liệu mới vào hệ thống quản lý</p>
+        </div>
+        
+        <div id="errorBox" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 px-5 py-4 rounded-lg mb-6 text-base font-medium shadow-sm flex items-start gap-3">
+            <i class="fa-solid fa-circle-exclamation mt-1"></i> <span id="errorText"></span>
         </div>
 
-        <div class="bg-white p-8 rounded-lg shadow-xl border-t-4 border-blue-600">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Nộp Báo Cáo Mới</h2>
+        <form id="uploadForm" class="space-y-6">
             
-            <div id="errorBox" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-medium"></div>
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                <label class="block text-base font-bold text-slate-700 mb-2"><i class="fa-regular fa-calendar-check text-blue-500 mr-2"></i> Ngày đi kiểm tra thực tế</label>
+                <input type="date" id="ngay_kiem_tra" required class="block w-full p-4 border border-slate-300 rounded-xl bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-lg font-medium outline-none transition-all cursor-pointer shadow-sm">
+            </div>
 
-            <form id="uploadForm" class="space-y-4">
-                
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Ngày đi kiểm tra thực tế</label>
-                    <input type="date" id="ngay_kiem_tra" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-yellow-50 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Chọn Đường Dây</label>
-                    <select id="ma_thiet_bi" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <label class="block text-base font-bold text-slate-700 mb-2">Tên Đường Dây</label>
+                    <select id="ma_thiet_bi" required class="block w-full p-4 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-base font-medium outline-none transition-all shadow-sm">
                         <option value="">-- Đang tải danh sách... --</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Loại Biên Bản</label>
-                    <select id="bbkt_id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <label class="block text-base font-bold text-slate-700 mb-2">Loại Biên Bản</label>
+                    <select id="bbkt_id" required class="block w-full p-4 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-base font-medium outline-none transition-all shadow-sm">
                         <option value="">-- Đang tải danh sách... --</option>
                     </select>
                 </div>
+            </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">File Báo Cáo (Excel/PDF/Ảnh)</label>
-                    <input type="file" id="fileInput" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            <div class="mt-8">
+                <label class="block text-base font-bold text-slate-700 mb-2">Đính kèm File báo cáo (Excel, PDF, Hình ảnh)</label>
+                <div class="border-2 border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-colors">
+                    <input type="file" id="fileInput" required class="block w-full text-base text-slate-500 file:mr-6 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer transition-colors shadow-sm">
                 </div>
+            </div>
 
-                <button type="submit" id="btnSubmit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded hover:bg-blue-700 transition">
-                    Tải lên báo cáo
-                </button>
-                <p id="statusMsg" class="text-center text-sm font-medium mt-2"></p>
-            </form>
-        </div>
+            <button type="submit" id="btnSubmit" class="w-full bg-slate-900 text-white font-black text-xl py-5 px-6 rounded-2xl hover:bg-blue-600 hover:shadow-lg transition-all flex justify-center items-center gap-3 mt-4">
+                <i class="fa-solid fa-paper-plane"></i> XÁC NHẬN TẢI LÊN
+            </button>
+
+            <div id="statusContainer" class="hidden text-center p-4 rounded-xl font-bold text-lg border"></div>
+        </form>
     </div>
 
     <script>
-        // Mặc định ngày kiểm tra là ngày hôm nay
         document.getElementById('ngay_kiem_tra').value = new Date().toISOString().split('T')[0];
 
-        // --- CẤU HÌNH API ---
+        // CẤU HÌNH API
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co'; 
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const supabaseKey = 'DÁN_ANON_KEY_CỦA_BẠN_VÀO_ĐÂY';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbz4IarWoVEgCHl-UD1Kobk6oGCzVx7XsPkoVHmSoCQYeHfHg-ulrHSzwIBeNkTP9NAT3A/exec';
+        const googleScriptUrl = 'DÁN_LINK_GOOGLE_SCRIPT_CỦA_BẠN_VÀO_ĐÂY';
 
-        // TẢI DANH SÁCH DROPDOWN
         async function loadDropdowns() {
             try {
                 const { data: ddayData, error: err1 } = await db.from('dday').select('*').order('ten_duong_day');
                 if (err1) throw err1;
                 const ddaySelect = document.getElementById('ma_thiet_bi');
-                ddaySelect.innerHTML = '<option value="">-- Chọn đường dây --</option>';
+                ddaySelect.innerHTML = '<option value="">-- Click để chọn --</option>';
                 ddayData.forEach(item => ddaySelect.innerHTML += `<option value="${item.ma_thiet_bi}">${item.ten_duong_day}</option>`);
 
                 const { data: dmbbData, error: err2 } = await db.from('dmbb').select('*').order('bbkt_id');
                 if (err2) throw err2;
                 const dmbbSelect = document.getElementById('bbkt_id');
-                dmbbSelect.innerHTML = '<option value="">-- Chọn loại biên bản --</option>';
+                dmbbSelect.innerHTML = '<option value="">-- Click để chọn --</option>';
                 dmbbData.forEach(item => dmbbSelect.innerHTML += `<option value="${item.bbkt_id}">${item.ten_bb}</option>`);
-
             } catch (err) {
                 const errBox = document.getElementById('errorBox');
                 errBox.classList.remove('hidden');
-                errBox.innerText = "Lỗi kết nối CSDL: " + err.message;
+                document.getElementById('errorText').innerText = "Không thể kết nối máy chủ dữ liệu: " + err.message;
             }
         }
         loadDropdowns();
 
-        // XỬ LÝ KHI BẤM NÚT TẢI LÊN
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
-            const status = document.getElementById('statusMsg');
+            const statusContainer = document.getElementById('statusContainer');
             
-            const ngay_kiem_tra = document.getElementById('ngay_kiem_tra').value; // Lấy ngày người dùng nhập
+            const ngay_kiem_tra = document.getElementById('ngay_kiem_tra').value;
             const ma_thiet_bi = document.getElementById('ma_thiet_bi').value;
             const bbkt_id = document.getElementById('bbkt_id').value;
             const file = document.getElementById('fileInput').files[0];
 
             btn.disabled = true;
-            btn.innerText = "⏳ Đang đẩy file lên Google Drive...";
-            status.innerText = "";
-            status.className = "text-center text-sm font-medium mt-2 text-blue-600";
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG XỬ LÝ DỮ LIỆU...';
+            btn.classList.add('opacity-75');
+            statusContainer.classList.add('hidden');
 
             try {
                 const reader = new FileReader();
@@ -116,19 +128,16 @@
                     const result = await response.json();
                     
                     if(result.status === 'success') {
-                        btn.innerText = "⏳ Đang lưu dữ liệu vào hệ thống...";
-                        
-                        // Truyền thêm thoi_gian vào Supabase
                         const { error } = await db.from('bbkt').insert([
                             { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url, thoi_gian: ngay_kiem_tra }
                         ]);
 
                         if(error) throw error;
 
-                        status.innerText = "✅ Tải lên thành công! Hãy qua bảng tổng hợp để kiểm tra.";
-                        status.className = "text-center text-sm font-medium mt-2 text-green-600";
+                        statusContainer.classList.remove('hidden');
+                        statusContainer.className = "text-center p-5 rounded-xl font-bold text-lg border bg-green-50 border-green-200 text-green-700";
+                        statusContainer.innerHTML = '<i class="fa-solid fa-circle-check text-2xl mb-2 block"></i> Tải lên thành công! Báo cáo đã được ghi nhận.';
                         
-                        // Reset form nhưng giữ lại ngày vừa nhập cho tiện
                         document.getElementById('ma_thiet_bi').value = "";
                         document.getElementById('bbkt_id').value = "";
                         document.getElementById('fileInput').value = "";
@@ -136,15 +145,19 @@
                         throw new Error(result.message);
                     }
                     btn.disabled = false;
-                    btn.innerText = "Tải lên báo cáo";
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> TẢI LÊN TIẾP TỤC';
+                    btn.classList.remove('opacity-75');
                 };
                 reader.readAsDataURL(file);
                 
             } catch (err) {
-                status.innerText = "❌ Lỗi: " + err.message;
-                status.className = "text-center text-sm font-medium mt-2 text-red-600";
+                statusContainer.classList.remove('hidden');
+                statusContainer.className = "text-center p-5 rounded-xl font-bold text-lg border bg-red-50 border-red-200 text-red-700";
+                statusContainer.innerHTML = '<i class="fa-solid fa-circle-xmark text-2xl mb-2 block"></i> Lỗi: ' + err.message;
+                
                 btn.disabled = false;
-                btn.innerText = "Tải lên báo cáo";
+                btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> THỬ LẠI';
+                btn.classList.remove('opacity-75');
             }
         });
     </script>
