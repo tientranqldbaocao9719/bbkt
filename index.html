@@ -139,4 +139,87 @@
                     const icon = isMissing ? '<i class="fa-solid fa-triangle-exclamation mr-1 opacity-50"></i>' : '';
                     
                     html += `<td class="p-4 text-center ${cellClass} border-r border-slate-100 last:border-r-0">
-                        <button onclick='showDetails("${row.ten_duong
+                        <button onclick='showDetails("${row.ten_duong_day}", "${c.ten_bb}", ${JSON.stringify(r.details)})' 
+                                class="w-full h-full py-2 px-3 rounded-lg hover:bg-black/5 hover:scale-105 transition-all font-black text-xl flex items-center justify-center gap-1 cursor-pointer">
+                            ${icon} ${r.actual} <span class="text-sm font-medium opacity-50 mx-1">/</span> ${r.required}
+                        </button>
+                    </td>`;
+                });
+                html += `</tr>`;
+            });
+            document.getElementById('tbody').innerHTML = html;
+        }
+
+        function calculateSummary(data, config) {
+            let statsHtml = '';
+            config.forEach((c, index) => {
+                let totalActual = 0;
+                let totalRequired = data.length * c.required_count;
+                data.forEach(row => totalActual += row.reports[c.bbkt_id].actual);
+                
+                const borderClass = index === 0 ? '' : 'border-l border-slate-700 pl-6';
+                statsHtml += `<div class="${borderClass} flex flex-col items-center">
+                    <span class="text-slate-400 text-xs font-bold uppercase mb-1">${c.ten_bb}</span>
+                    <div class="text-2xl font-black text-blue-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 shadow-inner">
+                        ${totalActual} <span class="text-lg text-slate-500 font-normal">/ ${totalRequired}</span>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('summaryStats').innerHTML = statsHtml;
+        }
+
+        function showDetails(lineName, reportName, details) {
+            document.getElementById('modalTitle').innerText = `${reportName}`;
+            let html = `<div class="mb-4 bg-white p-3 rounded-lg border border-slate-200 text-slate-600 font-medium">📍 ${lineName}</div>`;
+            
+            if (details.length === 0) {
+                html += '<div class="text-center p-8 bg-white rounded-xl border border-dashed border-slate-300 text-slate-400 font-medium"><i class="fa-solid fa-folder-open text-4xl mb-3 opacity-50"></i><br>Chưa có biên bản nào được nộp</div>';
+            } else {
+                details.forEach((d, i) => {
+                    html += `<div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-blue-100 text-blue-700 w-10 h-10 rounded-full flex items-center justify-center font-black">${details.length - i}</div>
+                            <div>
+                                <p class="text-sm text-slate-500 font-medium">Kiểm tra ngày</p>
+                                <p class="font-bold text-slate-800 text-lg">${d.ngay}</p>
+                            </div>
+                        </div>
+                        <a href="${d.url}" target="_blank" class="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="fa-solid fa-file-arrow-down mr-2"></i> Tải file</a>
+                    </div>`;
+                });
+            }
+            document.getElementById('modalBody').innerHTML = html;
+            toggleModal();
+        }
+
+        function filterTable() {
+            const input = document.getElementById("nameFilter").value.toUpperCase();
+            const tr = document.getElementById("tbody").getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    let textValue = td.textContent || td.innerText;
+                    tr[i].style.display = textValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
+                }
+            }
+        }
+
+        function toggleModal() {
+            const body = document.querySelector('body');
+            const modal = document.getElementById('modal');
+            const modalContainer = modal.querySelector('.modal-container');
+            
+            if(modal.classList.contains('opacity-0')) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                setTimeout(() => modalContainer.classList.remove('scale-95'), 10);
+            } else {
+                modalContainer.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('opacity-0', 'pointer-events-none'), 200);
+            }
+            body.classList.toggle('modal-active');
+        }
+
+        init();
+    </script>
+</body>
+</html>
