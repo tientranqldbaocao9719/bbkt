@@ -8,68 +8,88 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .sticky-col { position: sticky; left: 0; background-color: white; z-index: 20; border-right: 2px solid #cbd5e1; }
+        body { background-color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+        .sticky-col { position: sticky; left: 0; background-color: #ffffff; z-index: 20; border-right: 2px solid #e2e8f0; }
         .sticky-header { position: sticky; top: 0; z-index: 30; }
-        .cell-yellow { background-color: #fef9c3; } /* Màu vàng cảnh báo thiếu */
-        .modal { transition: opacity 0.25s ease; }
-        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
-        .table-container { height: calc(100vh - 250px); overflow: auto; }
+        .cell-yellow { background-color: #fef08a !important; color: #854d0e; } /* Vàng nổi bật hơn */
+        .modal { transition: opacity 0.3s ease-in-out; }
+        body.modal-active { overflow: hidden; }
+        .table-container { max-height: calc(100vh - 280px); overflow: auto; border-radius: 0.5rem; }
+        
+        /* Tùy chỉnh thanh cuộn cho mượt và đẹp */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-100 font-sans leading-normal tracking-normal text-slate-900">
+<body class="text-slate-800 antialiased">
 
-    <nav class="bg-slate-800 p-4 shadow-lg sticky top-0 z-50">
-        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
-            <div class="text-white font-bold text-xl mb-4 md:mb-0">
-                <i class="fa-solid fa-tower-transmission mr-2 text-blue-400"></i> TRẠM QUẢN LÝ BÁO CÁO
+    <nav class="bg-slate-900 px-6 py-5 shadow-lg sticky top-0 z-50">
+        <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div class="text-white font-black text-2xl tracking-wide flex items-center">
+                <i class="fa-solid fa-layer-group text-blue-500 mr-3 text-3xl"></i> 
+                TRẠM QUẢN LÝ BÁO CÁO
             </div>
             
-            <div id="summaryStats" class="flex space-x-6 text-white text-xs md:text-sm">
-                </div>
+            <div id="summaryStats" class="flex flex-wrap justify-center gap-6 text-white bg-slate-800 px-6 py-3 rounded-xl border border-slate-700">
+                <div class="text-slate-400 text-sm">Đang tải thống kê...</div>
+            </div>
 
-            <div class="flex space-x-2 mt-4 md:mt-0">
-                <input type="number" id="yearPicker" value="2026" class="p-2 rounded bg-slate-700 text-white border-none w-20 font-bold" onchange="init()">
-                <a href="upload.html" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-bold shadow transition"><i class="fa-solid fa-plus mr-1"></i> Nộp Mới</a>
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-800 flex items-center rounded-lg border border-slate-700 overflow-hidden">
+                    <span class="px-4 text-slate-300 font-medium bg-slate-800 text-lg">Năm</span>
+                    <input type="number" id="yearPicker" value="2026" class="p-3 bg-slate-700 text-white font-bold text-xl outline-none w-28 text-center" onchange="init()">
+                </div>
+                <a href="upload.html" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-md transition-all flex items-center gap-2 border border-blue-400">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Nộp Mới
+                </a>
             </div>
         </div>
     </nav>
 
-    <div class="p-4 md:p-8">
-        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div class="p-4 border-b bg-slate-50 flex flex-col md:flex-row items-center gap-4">
-                <div class="relative w-full md:w-96">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+    <div class="p-6 md:p-8 max-w-[1600px] mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+            <div class="p-5 border-b bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="relative w-full md:w-[400px]">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 text-lg">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Lọc theo tên đường dây..." class="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none">
+                    <input type="text" id="nameFilter" onkeyup="filterTable()" placeholder="Gõ tên đường dây để tìm nhanh..." class="pl-12 pr-4 py-3 w-full border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-lg transition-all shadow-sm">
                 </div>
-                <div class="text-sm text-slate-500 font-medium">
-                    <i class="fa-solid fa-circle-info mr-1"></i> Ô <span class="bg-yellow-100 px-2 py-0.5 rounded border border-yellow-300">màu vàng</span> là chưa đủ chỉ tiêu năm. Click vào số để xem chi tiết.
+                <div class="text-base text-slate-600 font-medium bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3">
+                    <i class="fa-solid fa-circle-exclamation text-yellow-500 text-xl"></i> 
+                    <span>Ô <span class="bg-yellow-200 px-3 py-1 rounded-md text-yellow-900 font-bold mx-1 shadow-sm">màu vàng</span> là chưa nộp đủ chỉ tiêu. Nhấp vào số để xem lịch sử nộp.</span>
                 </div>
             </div>
 
-            <div class="table-container border-t">
+            <div class="table-container">
                 <table class="w-full text-left border-collapse" id="reportTable">
-                    <thead class="sticky-header shadow-md" id="thead">
+                    <thead class="sticky-header shadow-sm bg-slate-100" id="thead">
                         </thead>
-                    <tbody id="tbody" class="divide-y divide-slate-200">
-                        <tr><td colspan="10" class="p-20 text-center font-bold text-blue-500 text-xl animate-pulse">Đang Supabase xử lý dữ liệu...</td></tr>
+                    <tbody id="tbody" class="divide-y divide-slate-200 bg-white">
+                        <tr><td colspan="10" class="p-20 text-center font-bold text-blue-500 text-2xl flex flex-col items-center justify-center gap-4">
+                            <i class="fa-solid fa-circle-notch fa-spin text-4xl"></i> Đang tải và phân tích ma trận dữ liệu...
+                        </td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-[100]">
-        <div class="modal-overlay absolute w-full h-full bg-black opacity-50"></div>
-        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
-            <div class="modal-content py-4 text-left px-6">
-                <div class="flex justify-between items-center pb-3 border-b">
-                    <p class="text-xl font-bold text-slate-800" id="modalTitle">Chi tiết nộp báo cáo</p>
-                    <div class="cursor-pointer z-50" onclick="toggleModal()"><i class="fa-solid fa-xmark text-2xl"></i></div>
+    <div id="modal" class="modal opacity-0 pointer-events-none fixed inset-0 flex items-center justify-center z-[100]">
+        <div class="modal-overlay absolute inset-0 bg-slate-900 opacity-60 backdrop-blur-sm" onclick="toggleModal()"></div>
+        <div class="modal-container bg-white w-full max-w-lg mx-auto rounded-2xl shadow-2xl z-50 overflow-hidden transform scale-95 transition-transform duration-300">
+            <div class="bg-blue-50 px-6 py-5 border-b border-blue-100 flex justify-between items-center">
+                <p class="text-xl font-black text-blue-900" id="modalTitle">Chi Tiết Nộp Báo Cáo</p>
+                <button class="text-blue-400 hover:text-blue-700 transition-colors" onclick="toggleModal()">
+                    <i class="fa-solid fa-circle-xmark text-3xl"></i>
+                </button>
+            </div>
+            <div id="modalBody" class="p-6 space-y-4 max-h-[60vh] overflow-y-auto bg-slate-50">
                 </div>
-                <div id="modalBody" class="py-4 space-y-3 max-h-96 overflow-auto">
-                    </div>
+            <div class="bg-white px-6 py-4 border-t border-slate-100 text-right">
+                <button onclick="toggleModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-6 rounded-lg transition-colors text-lg">Đóng</button>
             </div>
         </div>
     </div>
@@ -77,22 +97,16 @@
     <script>
         // CẤU HÌNH API
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const supabaseKey = 'DÁN_ANON_KEY_CỦA_BẠN_VÀO_ĐÂY';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
 
         let reportData = [];
 
         async function init() {
             const year = document.getElementById('yearPicker').value;
-            // Gọi hàm xử lý Server-side RPC từ Supabase
             const { data, error } = await db.rpc('get_yearly_report_summary', { target_year: parseInt(year) });
             
-            if (error) {
-                console.error(error);
-                alert("Lỗi tải dữ liệu. Hãy chắc chắn bạn đã tạo Hàm Function trên Supabase.");
-                return;
-            }
-
+            if (error) { console.error(error); alert("Lỗi tải dữ liệu. Hãy kiểm tra Supabase."); return; }
             reportData = data.data;
             renderHeader(data.config);
             renderBody(data.data, data.config);
@@ -100,10 +114,13 @@
         }
 
         function renderHeader(config) {
-            let html = `<tr class="bg-slate-200 text-slate-700 uppercase text-xs">
-                <th class="p-4 sticky-col top-0">Tên Đường Dây</th>`;
+            let html = `<tr class="bg-slate-100 text-slate-700 uppercase text-sm tracking-wider">
+                <th class="p-5 sticky-col top-0 font-black border-b border-slate-300 shadow-sm w-80">Tên Đường Dây</th>`;
             config.forEach(c => {
-                html += `<th class="p-4 text-center">${c.ten_bb}<br><span class="text-[10px] lowercase font-normal opacity-70">Cần ${c.required_count} bản/năm</span></th>`;
+                html += `<th class="p-5 text-center border-b border-slate-300 shadow-sm min-w-[140px]">
+                    <div class="font-bold text-slate-800">${c.ten_bb}</div>
+                    <div class="text-xs text-blue-600 bg-blue-100 inline-block px-2 py-1 rounded mt-2 normal-case font-medium">Chỉ tiêu: ${c.required_count} bản</div>
+                </th>`;
             });
             html += `</tr>`;
             document.getElementById('thead').innerHTML = html;
@@ -112,81 +129,14 @@
         function renderBody(data, config) {
             let html = '';
             data.forEach(row => {
-                html += `<tr class="hover:bg-slate-50 transition">
-                    <td class="p-4 font-bold text-sm sticky-col">${row.ten_duong_day}</td>`;
+                html += `<tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="p-5 font-bold text-slate-700 text-base sticky-col group-hover:bg-slate-50">${row.ten_duong_day}</td>`;
                 
                 config.forEach(c => {
                     const r = row.reports[c.bbkt_id];
                     const isMissing = r.actual < r.required;
-                    const cellClass = isMissing ? 'cell-yellow' : '';
+                    const cellClass = isMissing ? 'cell-yellow' : 'text-slate-600';
+                    const icon = isMissing ? '<i class="fa-solid fa-triangle-exclamation mr-1 opacity-50"></i>' : '';
                     
-                    html += `<td class="p-4 text-center font-bold text-sm ${cellClass}">
-                        <button onclick='showDetails("${row.ten_duong_day}", "${c.ten_bb}", ${JSON.stringify(r.details)})' class="hover:scale-110 transition cursor-pointer">
-                            ${r.actual}/${r.required}
-                        </button>
-                    </td>`;
-                });
-                html += `</tr>`;
-            });
-            document.getElementById('tbody').innerHTML = html;
-        }
-
-        function calculateSummary(data, config) {
-            let statsHtml = '';
-            config.forEach(c => {
-                let totalActual = 0;
-                let totalRequired = data.length * c.required_count;
-                data.forEach(row => totalActual += row.reports[c.bbkt_id].actual);
-                
-                statsHtml += `<div class="border-l border-slate-600 pl-4">
-                    <p class="opacity-70 text-[10px] uppercase">${c.ten_bb}</p>
-                    <p class="font-bold text-blue-400">${totalActual}/${totalRequired}</p>
-                </div>`;
-            });
-            document.getElementById('summaryStats').innerHTML = statsHtml;
-        }
-
-        function showDetails(lineName, reportName, details) {
-            document.getElementById('modalTitle').innerText = `${lineName} - ${reportName}`;
-            let html = '';
-            if (details.length === 0) {
-                html = '<p class="text-center text-slate-400 italic">Chưa có biên bản nào được nộp trong năm này.</p>';
-            } else {
-                details.forEach((d, i) => {
-                    html += `<div class="flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-200">
-                        <div>
-                            <p class="text-xs text-slate-500">Lần ${details.length - i}</p>
-                            <p class="font-bold">Ngày kiểm tra: ${d.ngay}</p>
-                        </div>
-                        <a href="${d.url}" target="_blank" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-blue-200"><i class="fa-solid fa-file-pdf mr-1"></i> Xem file</a>
-                    </div>`;
-                });
-            }
-            document.getElementById('modalBody').innerHTML = html;
-            toggleModal();
-        }
-
-        function filterTable() {
-            const input = document.getElementById("nameFilter").value.toUpperCase();
-            const tr = document.getElementById("tbody").getElementsByTagName("tr");
-            for (let i = 0; i < tr.length; i++) {
-                let td = tr[i].getElementsByTagName("td")[0];
-                if (td) {
-                    let textValue = td.textContent || td.innerText;
-                    tr[i].style.display = textValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
-                }
-            }
-        }
-
-        function toggleModal() {
-            const body = document.querySelector('body');
-            const modal = document.getElementById('modal');
-            modal.classList.toggle('opacity-0');
-            modal.classList.toggle('pointer-events-none');
-            body.classList.toggle('modal-active');
-        }
-
-        init();
-    </script>
-</body>
-</html>
+                    html += `<td class="p-4 text-center ${cellClass} border-r border-slate-100 last:border-r-0">
+                        <button onclick='showDetails("${row.ten_duong
