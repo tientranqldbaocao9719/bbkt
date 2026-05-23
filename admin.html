@@ -12,7 +12,6 @@
         .sticky-header { position: sticky; top: 0; z-index: 30; }
         .table-container { height: calc(100vh - 100px); overflow: auto; -webkit-overflow-scrolling: touch; }
         td, th { padding: 10px 12px; font-size: 13px; text-align: center; white-space: nowrap; }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -23,12 +22,11 @@
     <nav class="bg-slate-900 p-3 md:px-5 shadow z-50 shrink-0 border-b-2 border-red-500">
         <div class="mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="text-white font-bold text-base md:text-lg flex items-center">
-                <i class="fa-solid fa-user-shield mr-2 text-red-400"></i> QUẢN TRỊ VIÊN (ADMIN)
+                <i class="fa-solid fa-user-shield mr-2 text-red-400"></i> QUẢN TRỊ VIÊN (XEM LỊCH SỬ NỘP)
             </div>
-            
             <div class="flex items-center gap-2">
                 <a href="index.html" class="bg-slate-700 text-white px-4 py-2 rounded shadow-md text-sm font-bold border border-transparent hover:bg-slate-600 transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Bảng Tổng Hợp
+                    <i class="fa-solid fa-arrow-left"></i> Về Dashboard
                 </a>
             </div>
         </div>
@@ -48,7 +46,7 @@
                         </tr>
                     </thead>
                     <tbody id="tbody" class="divide-y divide-slate-200 bg-white">
-                        <tr><td colspan="5" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm">Đang nhờ Supabase lấy dữ liệu...</td></tr>
+                        <tr><td colspan="5" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -56,22 +54,31 @@
     </div>
 
     <script>
-        // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
 
+        let isAdminVerified = false; // Biến nhớ trạng thái đăng nhập Admin
+
+        function verifyAdmin() {
+            if (isAdminVerified) return true;
+            let pass = prompt("⛔ YÊU CẦU QUYỀN QUẢN TRỊ VÀ ĐIỀU HÀNH!\nVui lòng nhập mật khẩu để thao tác:");
+            if (pass === "111986") {
+                isAdminVerified = true;
+                return true;
+            }
+            alert("❌ Mật khẩu không chính xác. Từ chối thao tác!");
+            return false;
+        }
+
         async function loadAdminData() {
             try {
-                const { data, error } = await db.from('admin_recent_reports')
-                                                .select('*')
-                                                .limit(100);
-
+                const { data, error } = await db.from('admin_recent_reports').select('*').limit(100);
                 if (error) throw error;
 
                 let html = '';
                 if (data.length === 0) {
-                    html = `<tr><td colspan="5" class="p-10 text-center text-slate-500 font-bold">Chưa có biên bản nào trong hệ thống.</td></tr>`;
+                    html = `<tr><td colspan="5" class="p-10 text-center text-slate-500 font-bold">Chưa có biên bản nào.</td></tr>`;
                 } else {
                     data.forEach(r => {
                         const dDate = new Date(r.thoi_gian);
@@ -95,13 +102,15 @@
                     });
                 }
                 document.getElementById('tbody').innerHTML = html;
-
             } catch (err) {
                 document.getElementById('tbody').innerHTML = `<tr><td colspan="5" class="p-10 text-center text-red-500 font-bold">❌ Lỗi tải dữ liệu: ${err.message}</td></tr>`;
             }
         }
 
         async function deleteReport(baocao_id) {
+            // Kiểm tra pass trước khi xóa
+            if (!verifyAdmin()) return;
+
             if (!confirm('⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA biên bản này?\n\nSau khi xóa, bảng thống kê sẽ báo thiếu và nhân viên bắt buộc phải nộp lại.')) {
                 return;
             }
@@ -109,10 +118,8 @@
             try {
                 const { error } = await db.from('bbkt').delete().eq('baocao_id', baocao_id);
                 if (error) throw error;
-
                 alert('✅ Đã xóa biên bản thành công!');
                 loadAdminData(); 
-                
             } catch (err) {
                 alert('❌ Lỗi khi xóa: ' + err.message);
             }
