@@ -53,7 +53,6 @@
     </div>
 
     <div class="flex-1 flex flex-col min-h-0 bg-white">
-        
         <div class="p-2 border-b border-slate-200 bg-white flex flex-col sm:flex-row justify-between items-center gap-2 shrink-0">
             <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                 <div class="relative w-full sm:w-[350px]">
@@ -109,7 +108,6 @@
         const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwOo1wv-sAjt7PrNSZuZHs3LyNALsHlNGzSmFnjyPz0bHwaYrZ_xal84exutrQLn8v5Uw/exec';
 
         let allLineNames = []; 
-
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
 
@@ -133,18 +131,23 @@
             let totalReqYearOverall = 0;
             let filterHtml = '<option value="ALL">Hiển thị tất cả biên bản</option>';
 
-            // LOGIC MỚI: Chỉ cộng dồn KPI nếu `is_applicable` = TRUE
+            // Ép kiểu (parseInt) 100% để diệt gọn lỗi NaN
             data.config.forEach((c, index) => {
                 c.colActual = 0;
                 c.colReqCurrent = 0;
                 c.colReqYear = 0;
-                const reqYearPerLine = Math.floor(12 / c.tan_suat);
+                
+                const tanSuat = parseInt(c.tan_suat) || 12;
+                const reqYearPerLine = Math.floor(12 / tanSuat);
 
                 data.data.forEach(row => { 
                     const r = row.reports[c.bbkt_id];
-                    if (r.is_applicable) {
-                        c.colActual += r.actual;
-                        c.colReqCurrent += r.required;
+                    // Nếu r.is_applicable là undefined (do CSDL cũ), mặc định hiểu là TRUE để không mất số liệu
+                    const isApp = r && (r.is_applicable !== false); 
+                    
+                    if (isApp) {
+                        c.colActual += parseInt(r.actual || 0);
+                        c.colReqCurrent += parseInt(r.required || 0);
                         c.colReqYear += reqYearPerLine;
                     }
                 });
@@ -186,9 +189,15 @@
             let html = `<tr><th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
                 const shortName = c.ten_bb.replace(/biên bản /gi, '').trim();
+                
+                // Giao diện Badge (Pill) mới toanh, loại bỏ khối đen cục mịch
                 html += `<th class="min-w-[100px]">
                     <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${shortName}</div>
-                    <div class="mt-2"><span class="inline-block bg-slate-800 text-blue-400 text-[11px] font-black px-2.5 py-1 rounded shadow-sm">${c.colActual}/${c.colReqCurrent}</span></div>
+                    <div class="mt-1.5 flex items-center justify-center">
+                        <span class="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm">
+                            <i class="fa-solid fa-chart-pie opacity-50 text-[9px]"></i> ${c.colActual} / ${c.colReqCurrent}
+                        </span>
+                    </div>
                 </th>`;
             });
             html += `</tr>`;
@@ -198,7 +207,6 @@
         function renderBody(data, config) {
             let html = '';
             data.forEach(row => {
-                // Nhãn phụ để Sếp biết tuyến này thuộc loại nào
                 let badge = '';
                 if(row.loai_dday === 'CAP_NGAM') badge = '<span class="ml-2 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Cáp ngầm</span>';
                 else if(row.loai_dday === 'HON_HOP') badge = '<span class="ml-2 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Hỗn hợp</span>';
@@ -208,17 +216,16 @@
                 
                 config.forEach(c => {
                     const r = row.reports[c.bbkt_id];
+                    const isApp = r && (r.is_applicable !== false);
                     
-                    // NẾU BIÊN BẢN KHÔNG ÁP DỤNG CHO LOẠI TUYẾN NÀY (Cáp ngầm ko cần đo tĩnh không)
-                    if (!r.is_applicable) {
+                    if (!isApp) {
                         html += `
-                        <td class="bg-slate-100 border-slate-200 cursor-not-allowed">
+                        <td class="bg-slate-50 border-slate-200 cursor-not-allowed">
                             <div class="w-full h-full flex items-center justify-center text-slate-300 font-bold text-lg" title="Không áp dụng">
                                 <i class="fa-solid fa-minus"></i>
                             </div>
                         </td>`;
                     } 
-                    // NẾU CÓ ÁP DỤNG -> CHẠY LOGIC HIỂN THỊ BÌNH THƯỜNG
                     else {
                         const isMissing = (r.actual < r.required) || (r.is_compliant === false);
                         const bgClass = isMissing ? 'bg-yellow-100 hover:brightness-95' : 'bg-transparent hover:bg-slate-100';
