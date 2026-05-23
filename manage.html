@@ -3,57 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Hệ Thống</title>
+    <title>Quản Lý Hệ Thống Tuyến</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .modal-active { overflow: hidden; }
+        .tab-active { border-bottom-width: 4px; border-color: #3b82f6; color: #2563eb; background-color: white; font-weight: bold; }
+        .tab-inactive { border-bottom-width: 4px; border-color: transparent; color: #64748b; font-weight: bold; }
+        .tab-inactive:hover { color: #3b82f6; }
+    </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800">
-    <nav class="bg-slate-900 p-4 text-white flex justify-between items-center shadow-xl">
-        <h1 class="font-bold text-xl"><i class="fa-solid fa-gears mr-2 text-blue-400"></i> CẤU HÌNH HỆ THỐNG</h1>
-        <a href="index.html" class="bg-slate-700 px-4 py-2 rounded text-sm font-bold hover:bg-blue-600 transition-all"><i class="fa-solid fa-arrow-left mr-2"></i>Về Dashboard</a>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased">
+    <nav class="bg-slate-900 p-4 text-white flex justify-between items-center shadow-lg sticky top-0 z-40">
+        <h1 class="font-bold text-lg md:text-xl uppercase tracking-wide"><i class="fa-solid fa-gears mr-2 text-blue-400"></i> Cấu Hình Hệ Thống</h1>
+        <a href="index.html" class="bg-slate-700 px-4 py-2 rounded text-sm font-bold hover:bg-blue-600 transition-all shadow"><i class="fa-solid fa-arrow-left mr-2"></i>Về Dashboard</a>
     </nav>
 
     <div class="max-w-6xl mx-auto mt-6 p-4">
-        <div class="flex border-b border-slate-300 mb-6 space-x-4">
-            <button onclick="switchTab('dday')" id="tab-dday" class="px-6 py-3 font-bold border-b-4 border-blue-500 text-blue-600 bg-white rounded-t-lg">1. QUẢN LÝ ĐƯỜNG DÂY</button>
-            <button onclick="switchTab('dmbb')" id="tab-dmbb" class="px-6 py-3 font-bold border-b-4 border-transparent text-slate-500 hover:text-blue-500 transition-all">2. DANH MỤC BIÊN BẢN</button>
+        <div class="flex border-b border-slate-300 mb-6 space-x-2 md:space-x-4">
+            <button onclick="switchTab('dday')" id="tab-dday" class="px-4 md:px-6 py-3 tab-active rounded-t-lg transition-colors">1. QUẢN LÝ ĐƯỜNG DÂY</button>
+            <button onclick="switchTab('dmbb')" id="tab-dmbb" class="px-4 md:px-6 py-3 tab-inactive rounded-t-lg transition-colors">2. DANH MỤC BIÊN BẢN</button>
         </div>
 
-        <div id="sec-dday" class="bg-white rounded-lg shadow p-6">
+        <div id="sec-dday" class="bg-white rounded-lg shadow-md p-4 md:p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-lg">Danh sách Đường dây</h2>
-                <button onclick="openLineModal()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 shadow-md"><i class="fa-solid fa-plus mr-2"></i>Thêm Tuyến Mới</button>
+                <h2 class="font-bold text-lg text-slate-700">Danh sách Đường dây</h2>
+                <button onclick="openLineModal()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-blue-700 shadow-md transition-colors"><i class="fa-solid fa-plus mr-2"></i>Thêm Tuyến Mới</button>
             </div>
-            <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 border-b"><tr><th class="p-3">Mã Thiết Bị</th><th class="p-3">Tên Đường Dây</th><th class="p-3">Loại</th><th class="p-3 text-right">Thao tác</th></tr></thead><tbody id="list-dday"></tbody></table></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead class="bg-slate-100 border-b border-slate-200 text-sm text-slate-600 uppercase">
+                        <tr>
+                            <th class="p-3 font-bold">Mã Thiết Bị</th>
+                            <th class="p-3 font-bold">Tên Đường Dây</th>
+                            <th class="p-3 font-bold">Phân Loại Tuyến</th>
+                            <th class="p-3 font-bold text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-dday" class="divide-y divide-slate-100 text-sm">
+                        <tr><td colspan="4" class="p-8 text-center text-blue-500 font-bold animate-pulse">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div id="sec-dmbb" class="hidden bg-white rounded-lg shadow p-6">
+        <div id="sec-dmbb" class="hidden bg-white rounded-lg shadow-md p-4 md:p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-lg">Danh sách Loại biên bản</h2>
-                <button onclick="openReportModal()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 shadow-md"><i class="fa-solid fa-plus mr-2"></i>Thêm Loại Biên Bản</button>
+                <h2 class="font-bold text-lg text-slate-700">Danh sách Loại Biên Bản</h2>
+                <button onclick="openReportModal()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-indigo-700 shadow-md transition-colors"><i class="fa-solid fa-plus mr-2"></i>Thêm Loại Biên Bản</button>
             </div>
-            <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 border-b"><tr><th class="p-3">Mã BB</th><th class="p-3">Tên Biên Bản</th><th class="p-3">Tần suất</th><th class="p-3">Áp dụng cho</th><th class="p-3 text-right">Thao tác</th></tr></thead><tbody id="list-dmbb"></tbody></table></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead class="bg-slate-100 border-b border-slate-200 text-sm text-slate-600 uppercase">
+                        <tr>
+                            <th class="p-3 font-bold">Mã BB</th>
+                            <th class="p-3 font-bold">Tên Biên Bản</th>
+                            <th class="p-3 font-bold text-center">Tần suất</th>
+                            <th class="p-3 font-bold">Áp dụng cho</th>
+                            <th class="p-3 font-bold text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-dmbb" class="divide-y divide-slate-100 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-dday" class="hidden fixed inset-0 flex items-center justify-center z-50 px-4">
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-50" onclick="closeModal('modal-dday')"></div>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+            <div class="bg-blue-50 p-4 border-b border-blue-100 flex justify-between items-center">
+                <h3 id="lineModalTitle" class="font-black text-blue-800 uppercase text-lg">Thêm Đường Dây</h3>
+                <button onclick="closeModal('modal-dday')" class="text-slate-500 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="saveLine(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mã Thiết Bị (Viết liền, không dấu)</label>
+                    <input type="text" id="ma_thiet_bi" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Đường Dây hiển thị</label>
+                    <input type="text" id="ten_duong_day" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Phân loại Cấu trúc Tuyến</label>
+                    <select id="loai_dday" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                        <option value="TREN_KHONG">Tuyến Trên Không (Trụ, Dây dẫn)</option>
+                        <option value="CAP_NGAM">Tuyến Cáp Ngầm</option>
+                        <option value="HON_HOP">Tuyến Hỗn Hợp (Cả 2 loại trên)</option>
+                    </select>
+                </div>
+                <input type="hidden" id="is_edit_line" value="false">
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded hover:bg-blue-700 mt-2"><i class="fa-solid fa-floppy-disk mr-2"></i>Lưu Dữ Liệu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-dmbb" class="hidden fixed inset-0 flex items-center justify-center z-50 px-4">
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-50" onclick="closeModal('modal-dmbb')"></div>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+            <div class="bg-indigo-50 p-4 border-b border-indigo-100 flex justify-between items-center">
+                <h3 id="reportModalTitle" class="font-black text-indigo-800 uppercase text-lg">Thêm Biên Bản</h3>
+                <button onclick="closeModal('modal-dmbb')" class="text-slate-500 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="saveReport(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mã BB (Viết liền, không dấu)</label>
+                    <input type="text" id="bbkt_id" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Biên Bản</label>
+                    <input type="text" id="ten_bb" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-indigo-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tần suất kiểm tra (Số tháng)</label>
+                    <input type="number" id="tan_suat" required min="1" max="120" class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-indigo-400" placeholder="VD: 6 hoặc 12">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Áp dụng cho các loại tuyến:</label>
+                    <div class="space-y-2 bg-slate-50 p-3 border border-slate-200 rounded">
+                        <label class="flex items-center cursor-pointer"><input type="checkbox" value="TREN_KHONG" class="ap-dung-cb w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"><span class="ml-2 text-sm font-medium">Tuyến Trên Không</span></label>
+                        <label class="flex items-center cursor-pointer"><input type="checkbox" value="CAP_NGAM" class="ap-dung-cb w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"><span class="ml-2 text-sm font-medium">Tuyến Cáp Ngầm</span></label>
+                        <label class="flex items-center cursor-pointer"><input type="checkbox" value="HON_HOP" class="ap-dung-cb w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"><span class="ml-2 text-sm font-medium">Tuyến Hỗn Hợp</span></label>
+                    </div>
+                </div>
+                <input type="hidden" id="is_edit_report" value="false">
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded hover:bg-indigo-700 mt-2"><i class="fa-solid fa-floppy-disk mr-2"></i>Lưu Biên Bản</button>
+            </form>
         </div>
     </div>
 
     <script>
+        // --- CẤU HÌNH API SUPABASE ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
 
+        let currentTab = 'dday';
+
+        // --- HÀM TẢI DỮ LIỆU ---
+        async function loadData() {
+            if (currentTab === 'dday') {
+                const { data, error } = await db.from('dday').select('*').order('ten_duong_day');
+                if (error) { alert('Lỗi tải đường dây: ' + error.message); return; }
+                
+                let html = '';
+                if(data.length === 0) html = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Chưa có dữ liệu.</td></tr>';
+                data.forEach(item => {
+                    let badge = '';
+                    if(item.loai_dday === 'CAP_NGAM') badge = '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Cáp Ngầm</span>';
+                    else if(item.loai_dday === 'HON_HOP') badge = '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Hỗn Hợp</span>';
+                    else badge = '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Trên Không</span>';
+
+                    html += `<tr class="hover:bg-slate-50 border-b border-slate-50">
+                        <td class="p-3 font-mono text-slate-500 text-xs">${item.ma_thiet_bi}</td>
+                        <td class="p-3 font-bold text-slate-700">${item.ten_duong_day}</td>
+                        <td class="p-3">${badge}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="openLineModal('${item.ma_thiet_bi}', '${item.ten_duong_day}', '${item.loai_dday || 'TREN_KHONG'}')" class="text-blue-500 hover:bg-blue-100 p-2 rounded mr-1" title="Sửa"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteData('dday', 'ma_thiet_bi', '${item.ma_thiet_bi}')" class="text-red-500 hover:bg-red-100 p-2 rounded" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('list-dday').innerHTML = html;
+            } else {
+                const { data, error } = await db.from('dmbb').select('*').order('tan_suat');
+                if (error) { alert('Lỗi tải biên bản: ' + error.message); return; }
+                
+                let html = '';
+                if(data.length === 0) html = '<tr><td colspan="5" class="p-4 text-center text-slate-500">Chưa có dữ liệu.</td></tr>';
+                data.forEach(item => {
+                    const apDung = item.ap_dung_cho || '';
+                    let tags = '';
+                    if(apDung.includes('TREN_KHONG')) tags += '<span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">Trên Không</span>';
+                    if(apDung.includes('CAP_NGAM')) tags += '<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">Cáp Ngầm</span>';
+                    if(apDung.includes('HON_HOP')) tags += '<span class="bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[10px] font-bold">Hỗn Hợp</span>';
+
+                    html += `<tr class="hover:bg-slate-50 border-b border-slate-50">
+                        <td class="p-3 font-mono text-slate-500 text-xs">${item.bbkt_id}</td>
+                        <td class="p-3 font-bold text-slate-700">${item.ten_bb}</td>
+                        <td class="p-3 text-center font-bold text-indigo-600">${item.tan_suat} tháng</td>
+                        <td class="p-3">${tags}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="openReportModal('${item.bbkt_id}', '${item.ten_bb}', ${item.tan_suat}, '${apDung}')" class="text-indigo-500 hover:bg-indigo-100 p-2 rounded mr-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteData('dmbb', 'bbkt_id', '${item.bbkt_id}')" class="text-red-500 hover:bg-red-100 p-2 rounded"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('list-dmbb').innerHTML = html;
+            }
+        }
+
+        // --- CHUYỂN TAB ---
         function switchTab(tab) {
+            currentTab = tab;
             document.getElementById('sec-dday').classList.toggle('hidden', tab !== 'dday');
             document.getElementById('sec-dmbb').classList.toggle('hidden', tab !== 'dmbb');
-            document.getElementById('tab-dday').className = tab === 'dday' ? 'px-6 py-3 font-bold border-b-4 border-blue-500 text-blue-600 bg-white' : 'px-6 py-3 font-bold border-b-4 border-transparent text-slate-500';
-            document.getElementById('tab-dmbb').className = tab === 'dmbb' ? 'px-6 py-3 font-bold border-b-4 border-blue-500 text-blue-600 bg-white' : 'px-6 py-3 font-bold border-b-4 border-transparent text-slate-500';
+            document.getElementById('tab-dday').className = tab === 'dday' ? 'px-4 md:px-6 py-3 tab-active rounded-t-lg transition-colors' : 'px-4 md:px-6 py-3 tab-inactive rounded-t-lg transition-colors';
+            document.getElementById('tab-dmbb').className = tab === 'dmbb' ? 'px-4 md:px-6 py-3 tab-active rounded-t-lg transition-colors' : 'px-4 md:px-6 py-3 tab-inactive rounded-t-lg transition-colors';
             loadData();
         }
 
-        async function loadData() {
-            // Logic load bảng dday và dmbb, render vào list-dday và list-dmbb
-            // [Phần này bro dán thêm code JS xử lý DB tương tự các trang cũ nhé]
+        // --- ĐIỀU KHIỂN MODAL ĐƯỜNG DÂY ---
+        function openLineModal(id = '', ten = '', loai = 'TREN_KHONG') {
+            document.getElementById('is_edit_line').value = id !== '' ? 'true' : 'false';
+            document.getElementById('lineModalTitle').innerText = id !== '' ? 'Sửa Đường Dây' : 'Thêm Đường Dây Mới';
+            const inputId = document.getElementById('ma_thiet_bi');
+            inputId.value = id;
+            inputId.readOnly = id !== ''; // Không cho sửa ID nếu đang Edit
+            inputId.className = id !== '' ? 'w-full p-2 border border-slate-200 rounded outline-none bg-slate-100 text-slate-500 cursor-not-allowed' : 'w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-white';
+            
+            document.getElementById('ten_duong_day').value = ten;
+            document.getElementById('loai_dday').value = loai;
+            document.getElementById('modal-dday').classList.remove('hidden');
+            document.body.classList.add('modal-active');
         }
+
+        async function saveLine(e) {
+            e.preventDefault();
+            const isEdit = document.getElementById('is_edit_line').value === 'true';
+            const dataObj = {
+                ma_thiet_bi: document.getElementById('ma_thiet_bi').value.trim(),
+                ten_duong_day: document.getElementById('ten_duong_day').value.trim(),
+                loai_dday: document.getElementById('loai_dday').value
+            };
+
+            let error;
+            if(isEdit) {
+                const res = await db.from('dday').update(dataObj).eq('ma_thiet_bi', dataObj.ma_thiet_bi);
+                error = res.error;
+            } else {
+                const res = await db.from('dday').insert([dataObj]);
+                error = res.error;
+            }
+
+            if(error) alert('Lỗi: ' + error.message);
+            else { closeModal('modal-dday'); loadData(); }
+        }
+
+        // --- ĐIỀU KHIỂN MODAL BIÊN BẢN ---
+        function openReportModal(id = '', ten = '', tansuat = '', apdung = '') {
+            document.getElementById('is_edit_report').value = id !== '' ? 'true' : 'false';
+            document.getElementById('reportModalTitle').innerText = id !== '' ? 'Sửa Biên Bản' : 'Thêm Biên Bản Mới';
+            
+            const inputId = document.getElementById('bbkt_id');
+            inputId.value = id;
+            inputId.readOnly = id !== '';
+            inputId.className = id !== '' ? 'w-full p-2 border border-slate-200 rounded outline-none bg-slate-100 text-slate-500 cursor-not-allowed' : 'w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-indigo-400 bg-white';
+            
+            document.getElementById('ten_bb').value = ten;
+            document.getElementById('tan_suat').value = tansuat;
+
+            // Đánh dấu các Checkbox
+            const checkboxes = document.querySelectorAll('.ap-dung-cb');
+            checkboxes.forEach(cb => { cb.checked = apdung.includes(cb.value); });
+
+            document.getElementById('modal-dmbb').classList.remove('hidden');
+            document.body.classList.add('modal-active');
+        }
+
+        async function saveReport(e) {
+            e.preventDefault();
+            const isEdit = document.getElementById('is_edit_report').value === 'true';
+            
+            // Lấy danh sách checkbox đã tích
+            const checkboxes = document.querySelectorAll('.ap-dung-cb:checked');
+            let apDungArr = [];
+            checkboxes.forEach(cb => apDungArr.push(cb.value));
+            const apDungStr = apDungArr.join(',');
+
+            if(apDungArr.length === 0) { alert('Vui lòng chọn ít nhất 1 loại tuyến áp dụng!'); return; }
+
+            const dataObj = {
+                bbkt_id: document.getElementById('bbkt_id').value.trim(),
+                ten_bb: document.getElementById('ten_bb').value.trim(),
+                tan_suat: parseInt(document.getElementById('tan_suat').value),
+                ap_dung_cho: apDungStr
+            };
+
+            let error;
+            if(isEdit) {
+                const res = await db.from('dmbb').update(dataObj).eq('bbkt_id', dataObj.bbkt_id);
+                error = res.error;
+            } else {
+                const res = await db.from('dmbb').insert([dataObj]);
+                error = res.error;
+            }
+
+            if(error) alert('Lỗi: ' + error.message);
+            else { closeModal('modal-dmbb'); loadData(); }
+        }
+
+        // --- XÓA CHUNG ---
+        async function deleteData(table, colName, id) {
+            if(!confirm('Cảnh báo: Bạn có chắc chắn muốn xóa dòng này? Mọi báo cáo liên quan có thể bị ảnh hưởng.')) return;
+            const { error } = await db.from(table).delete().eq(colName, id);
+            if(error) alert('Lỗi xóa dữ liệu: ' + error.message);
+            else loadData();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        }
+
+        // Khởi động
         window.onload = loadData;
     </script>
 </body>
