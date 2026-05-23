@@ -40,7 +40,7 @@
                     <span class="px-3 text-slate-300 text-sm font-bold hidden md:inline bg-slate-800">Năm</span>
                     <input type="number" id="yearPicker" class="p-1.5 md:p-2 bg-slate-700 text-white font-bold text-sm outline-none cursor-pointer w-20 text-center" onchange="init()" onkeyup="if(event.key === 'Enter') init()">
                 </div>
-                <button onclick="checkAdminPassword()" class="bg-red-600 text-white px-4 py-1.5 md:py-2 rounded shadow-md text-xs md:text-sm font-bold hover:bg-red-500 transition-colors cursor-pointer">Admin</button>
+                <a href="admin.html" class="bg-red-600 text-white px-4 py-1.5 md:py-2 rounded shadow-md text-xs md:text-sm font-bold hover:bg-red-500 transition-colors cursor-pointer">Admin</a>
                 <a href="manage.html" class="bg-indigo-600 text-white px-4 py-1.5 md:py-2 rounded shadow-md text-xs md:text-sm font-bold hover:bg-indigo-500 transition-colors cursor-pointer"><i class="fa-solid fa-gears"></i> Cấu hình</a>
             </div>
         </div>
@@ -70,7 +70,6 @@
                     <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-blue-600"><i class="fa-solid fa-filter"></i></span>
                 </div>
             </div>
-            
             <div class="text-[11px] text-slate-600 font-medium whitespace-nowrap hidden lg:flex items-center gap-3 pr-2">
                 <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-sm bg-yellow-100 border border-yellow-300 inline-block"></span> Vi phạm KPI / Chu kỳ</span>
                 <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-sm bg-slate-100 border border-slate-300 inline-block"></span> Không áp dụng</span>
@@ -102,6 +101,7 @@
     </div>
 
     <script>
+        // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
@@ -111,12 +111,7 @@
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
 
-        function checkAdminPassword() {
-            let pass = prompt("Vui lòng nhập mật khẩu quản trị viên:");
-            if (pass === "111986") { window.location.href = "admin.html"; } 
-            else if (pass !== null) { alert("Mật khẩu không chính xác!"); }
-        }
-
+        // --- HÀM KHỞI TẠO DỮ LIỆU CHÍNH ---
         async function init() {
             const year = document.getElementById('yearPicker').value;
             if(!year) return;
@@ -131,7 +126,7 @@
             let totalReqYearOverall = 0;
             let filterHtml = '<option value="ALL">Hiển thị tất cả biên bản</option>';
 
-            // Ép kiểu (parseInt) 100% để diệt gọn lỗi NaN
+            // Tính toán loại bỏ lỗi NaN bằng parseInt và chỉ cộng khi is_applicable
             data.config.forEach((c, index) => {
                 c.colActual = 0;
                 c.colReqCurrent = 0;
@@ -142,7 +137,7 @@
 
                 data.data.forEach(row => { 
                     const r = row.reports[c.bbkt_id];
-                    // Nếu r.is_applicable là undefined (do CSDL cũ), mặc định hiểu là TRUE để không mất số liệu
+                    // Kiểm tra cờ is_applicable (Mặc định hiểu là TRUE nếu CSDL cũ chưa cập nhật kịp)
                     const isApp = r && (r.is_applicable !== false); 
                     
                     if (isApp) {
@@ -168,6 +163,7 @@
             filterColumns(); 
         }
 
+        // --- RENDER DẢI KPI ---
         function renderKPIs(actual, reqCurrent, reqYear, selectedYear) {
             const currentYear = new Date().getFullYear();
             const currentMonth = selectedYear < currentYear ? 12 : (selectedYear === currentYear ? new Date().getMonth() + 1 : 'Tương lai');
@@ -185,12 +181,12 @@
             document.getElementById('summaryStats').innerHTML = statsHtml;
         }
 
+        // --- RENDER TIÊU ĐỀ BẢNG (GIAO DIỆN BADGE MỚI) ---
         function renderHeader(config) {
             let html = `<tr><th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
                 const shortName = c.ten_bb.replace(/biên bản /gi, '').trim();
                 
-                // Giao diện Badge (Pill) mới toanh, loại bỏ khối đen cục mịch
                 html += `<th class="min-w-[100px]">
                     <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${shortName}</div>
                     <div class="mt-1.5 flex items-center justify-center">
@@ -204,6 +200,7 @@
             document.getElementById('thead').innerHTML = html;
         }
 
+        // --- RENDER NỘI DUNG BẢNG ---
         function renderBody(data, config) {
             let html = '';
             data.forEach(row => {
@@ -326,7 +323,7 @@
             }
         }
 
-        // --- MODAL & UPLOAD ---
+        // --- GIAO DIỆN MODAL NỘP FILE ---
         function showDetails(maThietBi, bbktId, lineName, reportName, encodedDetails) {
             document.getElementById('modalTitle').innerText = reportName;
             const details = JSON.parse(decodeURIComponent(encodedDetails));
