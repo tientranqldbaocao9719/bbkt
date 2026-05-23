@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Hệ Thống</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+    <nav class="bg-slate-900 p-4 text-white flex justify-between items-center shadow-xl">
+        <h1 class="font-bold text-xl"><i class="fa-solid fa-gears mr-2 text-blue-400"></i> CẤU HÌNH HỆ THỐNG</h1>
+        <a href="index.html" class="bg-slate-700 px-4 py-2 rounded text-sm font-bold hover:bg-blue-600 transition-all"><i class="fa-solid fa-arrow-left mr-2"></i>Về Dashboard</a>
+    </nav>
+
+    <div class="max-w-6xl mx-auto mt-6 p-4">
+        <div class="flex border-b border-slate-300 mb-6 space-x-4">
+            <button onclick="switchTab('dday')" id="tab-dday" class="px-6 py-3 font-bold border-b-4 border-blue-500 text-blue-600 bg-white rounded-t-lg">1. QUẢN LÝ ĐƯỜNG DÂY</button>
+            <button onclick="switchTab('dmbb')" id="tab-dmbb" class="px-6 py-3 font-bold border-b-4 border-transparent text-slate-500 hover:text-blue-500 transition-all">2. DANH MỤC BIÊN BẢN</button>
+        </div>
+
+        <div id="sec-dday" class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-lg">Danh sách Đường dây</h2>
+                <button onclick="openLineModal()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 shadow-md"><i class="fa-solid fa-plus mr-2"></i>Thêm Tuyến Mới</button>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 border-b"><tr><th class="p-3">Mã Thiết Bị</th><th class="p-3">Tên Đường Dây</th><th class="p-3">Loại</th><th class="p-3 text-right">Thao tác</th></tr></thead><tbody id="list-dday"></tbody></table></div>
+        </div>
+
+        <div id="sec-dmbb" class="hidden bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-lg">Danh sách Loại biên bản</h2>
+                <button onclick="openReportModal()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 shadow-md"><i class="fa-solid fa-plus mr-2"></i>Thêm Loại Biên Bản</button>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 border-b"><tr><th class="p-3">Mã BB</th><th class="p-3">Tên Biên Bản</th><th class="p-3">Tần suất</th><th class="p-3">Áp dụng cho</th><th class="p-3 text-right">Thao tác</th></tr></thead><tbody id="list-dmbb"></tbody></table></div>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
+        const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+        function switchTab(tab) {
+            document.getElementById('sec-dday').classList.toggle('hidden', tab !== 'dday');
+            document.getElementById('sec-dmbb').classList.toggle('hidden', tab !== 'dmbb');
+            document.getElementById('tab-dday').className = tab === 'dday' ? 'px-6 py-3 font-bold border-b-4 border-blue-500 text-blue-600 bg-white' : 'px-6 py-3 font-bold border-b-4 border-transparent text-slate-500';
+            document.getElementById('tab-dmbb').className = tab === 'dmbb' ? 'px-6 py-3 font-bold border-b-4 border-blue-500 text-blue-600 bg-white' : 'px-6 py-3 font-bold border-b-4 border-transparent text-slate-500';
+            loadData();
+        }
+
+        async function loadData() {
+            // Logic load bảng dday và dmbb, render vào list-dday và list-dmbb
+            // [Phần này bro dán thêm code JS xử lý DB tương tự các trang cũ nhé]
+        }
+        window.onload = loadData;
+    </script>
+</body>
+</html>
