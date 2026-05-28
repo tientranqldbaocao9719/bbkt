@@ -38,11 +38,12 @@
                             <th class="p-3 font-bold">Mã Thiết Bị</th>
                             <th class="p-3 font-bold">Tên Đường Dây</th>
                             <th class="p-3 font-bold">Phân Loại Tuyến</th>
+                            <th class="p-3 font-bold text-center">Tình Trạng</th>
                             <th class="p-3 font-bold text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="list-dday" class="divide-y divide-slate-100 text-sm">
-                        <tr><td colspan="4" class="p-8 text-center text-blue-500 font-bold animate-pulse">Đang tải dữ liệu...</td></tr>
+                        <tr><td colspan="5" class="p-8 text-center text-blue-500 font-bold animate-pulse">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -92,6 +93,13 @@
                         <option value="TREN_KHONG">Tuyến Trên Không (Trụ, Dây dẫn)</option>
                         <option value="CAP_NGAM">Tuyến Cáp Ngầm</option>
                         <option value="HON_HOP">Tuyến Hỗn Hợp (Cả 2 loại trên)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tình Trạng Hoạt Động</label>
+                    <select id="tinhtrang" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                        <option value="Vận hành">Vận hành</option>
+                        <option value="Không vận hành">Không vận hành</option>
                     </select>
                 </div>
                 <input type="hidden" id="is_edit_line" value="false">
@@ -160,19 +168,27 @@
                 if (error) { alert('Lỗi tải đường dây: ' + error.message); return; }
                 
                 let html = '';
-                if(data.length === 0) html = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Chưa có dữ liệu.</td></tr>';
+                if(data.length === 0) html = '<tr><td colspan="5" class="p-4 text-center text-slate-500">Chưa có dữ liệu.</td></tr>';
                 data.forEach(item => {
                     let badge = '';
                     if(item.loai_dday === 'CAP_NGAM') badge = '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Cáp Ngầm</span>';
                     else if(item.loai_dday === 'HON_HOP') badge = '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Hỗn Hợp</span>';
                     else badge = '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Trên Không</span>';
 
+                    let badgeTinhTrang = '';
+                    if(item.tinhtrang === 'Không vận hành') {
+                        badgeTinhTrang = '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-lock mr-1"></i>Ngừng</span>';
+                    } else {
+                        badgeTinhTrang = '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-bolt mr-1"></i>Vận hành</span>';
+                    }
+
                     html += `<tr class="hover:bg-slate-50 border-b border-slate-50">
                         <td class="p-3 font-mono text-slate-500 text-xs">${item.ma_thiet_bi}</td>
                         <td class="p-3 font-bold text-slate-700">${item.ten_duong_day}</td>
                         <td class="p-3">${badge}</td>
+                        <td class="p-3 text-center">${badgeTinhTrang}</td>
                         <td class="p-3 text-center">
-                            <button onclick="openLineModal('${item.ma_thiet_bi}', '${item.ten_duong_day}', '${item.loai_dday || 'TREN_KHONG'}')" class="text-blue-500 hover:bg-blue-100 p-2 rounded mr-1" title="Sửa"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="openLineModal('${item.ma_thiet_bi}', '${item.ten_duong_day}', '${item.loai_dday || 'TREN_KHONG'}', '${item.tinhtrang || 'Vận hành'}')" class="text-blue-500 hover:bg-blue-100 p-2 rounded mr-1" title="Sửa"><i class="fa-solid fa-pen-to-square"></i></button>
                             <button onclick="deleteData('dday', 'ma_thiet_bi', '${item.ma_thiet_bi}')" class="text-red-500 hover:bg-red-100 p-2 rounded" title="Xóa"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>`;
@@ -216,7 +232,7 @@
         }
 
         // --- ĐIỀU KHIỂN MODAL ---
-        function openLineModal(id = '', ten = '', loai = 'TREN_KHONG') {
+        function openLineModal(id = '', ten = '', loai = 'TREN_KHONG', tinhtrang = 'Vận hành') {
             if (!verifyAdmin()) return; // Chặn pass
             document.getElementById('is_edit_line').value = id !== '' ? 'true' : 'false';
             document.getElementById('lineModalTitle').innerText = id !== '' ? 'Sửa Đường Dây' : 'Thêm Đường Dây Mới';
@@ -226,6 +242,8 @@
             inputId.className = id !== '' ? 'w-full p-2 border border-slate-200 rounded outline-none bg-slate-100 text-slate-500 cursor-not-allowed' : 'w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-white';
             document.getElementById('ten_duong_day').value = ten;
             document.getElementById('loai_dday').value = loai;
+            document.getElementById('tinhtrang').value = tinhtrang;
+            
             document.getElementById('modal-dday').classList.remove('hidden');
             document.body.classList.add('modal-active');
         }
@@ -236,7 +254,8 @@
             const dataObj = {
                 ma_thiet_bi: document.getElementById('ma_thiet_bi').value.trim(),
                 ten_duong_day: document.getElementById('ten_duong_day').value.trim(),
-                loai_dday: document.getElementById('loai_dday').value
+                loai_dday: document.getElementById('loai_dday').value,
+                tinhtrang: document.getElementById('tinhtrang').value
             };
             let error;
             if(isEdit) { const res = await db.from('dday').update(dataObj).eq('ma_thiet_bi', dataObj.ma_thiet_bi); error = res.error; } 
