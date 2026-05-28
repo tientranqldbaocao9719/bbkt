@@ -38,7 +38,7 @@
                 <table class="w-full text-left border-collapse" id="adminTable">
                     <thead class="sticky-header shadow-sm bg-slate-100 uppercase text-[11px] text-slate-600 tracking-wide">
                         <tr>
-                            <th class="p-3 sticky-col top-0 font-bold border-b border-slate-300 w-24 z-[35]">Hành Động</th>
+                            <th class="p-3 sticky-col top-0 font-bold border-b border-slate-300 min-w-[140px] z-[35]">Hành Động</th>
                             <th class="p-3 border-b border-slate-300 w-28">Ngày Kiểm Tra</th>
                             <th class="p-3 border-b border-slate-300 text-left min-w-[200px]">Tên Đường Dây</th>
                             <th class="p-3 border-b border-slate-300">Loại Biên Bản</th>
@@ -50,6 +50,26 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-date" class="hidden fixed inset-0 flex items-center justify-center z-50 px-4">
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-50" onclick="closeEditModal()"></div>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm z-10 overflow-hidden">
+            <div class="bg-blue-50 p-4 border-b border-blue-100 flex justify-between items-center">
+                <h3 class="font-black text-blue-800 uppercase text-lg">Sửa Ngày Kiểm Tra</h3>
+                <button onclick="closeEditModal()" class="text-slate-500 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="saveNewDate(event)" class="p-5 space-y-4">
+                <input type="hidden" id="edit_baocao_id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ngày kiểm tra mới</label>
+                    <input type="date" id="edit_ngay_kiem_tra" required class="w-full p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50">
+                </div>
+                <button type="submit" id="btnSaveDate" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded hover:bg-blue-700 mt-2 transition-colors shadow">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i> Lưu Cập Nhật
+                </button>
+            </form>
         </div>
     </div>
 
@@ -81,14 +101,22 @@
                     html = `<tr><td colspan="5" class="p-10 text-center text-slate-500 font-bold">Chưa có biên bản nào.</td></tr>`;
                 } else {
                     data.forEach(r => {
+                        // Trích xuất YYYY-MM-DD để đưa vào input type="date"
+                        const rawDate = r.thoi_gian.split('T')[0];
+                        
                         const dDate = new Date(r.thoi_gian);
                         const dateStr = `${dDate.getDate().toString().padStart(2, '0')}/${(dDate.getMonth()+1).toString().padStart(2, '0')}/${dDate.getFullYear()}`;
 
                         html += `<tr class="hover:bg-slate-50 transition-colors group">
                             <td class="p-2 sticky-col bg-white text-center border-r border-slate-200 group-hover:bg-slate-50">
-                                <button onclick="deleteReport('${r.baocao_id}')" class="bg-red-100 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow-sm border border-red-200">
-                                    <i class="fa-solid fa-trash-can mr-1"></i> Xóa
-                                </button>
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button onclick="openEditDateModal('${r.baocao_id}', '${rawDate}')" class="bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white px-2.5 py-1.5 rounded text-xs font-bold transition-colors shadow-sm border border-blue-200" title="Sửa ngày">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button onclick="deleteReport('${r.baocao_id}')" class="bg-red-100 text-red-600 hover:bg-red-600 hover:text-white px-2.5 py-1.5 rounded text-xs font-bold transition-colors shadow-sm border border-red-200" title="Xóa">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td class="p-2 font-bold text-slate-800">${dateStr}</td>
                             <td class="p-2 text-left text-slate-700 text-sm font-medium whitespace-normal leading-tight min-w-[200px]">${r.ten_duong_day || 'Không xác định'}</td>
@@ -107,8 +135,44 @@
             }
         }
 
+        // --- CÁC HÀM XỬ LÝ SỬA NGÀY ---
+        function openEditDateModal(baocao_id, currentDate) {
+            if (!verifyAdmin()) return;
+            document.getElementById('edit_baocao_id').value = baocao_id;
+            document.getElementById('edit_ngay_kiem_tra').value = currentDate;
+            document.getElementById('modal-edit-date').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('modal-edit-date').classList.add('hidden');
+        }
+
+        async function saveNewDate(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveDate');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang lưu...';
+            btn.disabled = true;
+
+            const baocao_id = document.getElementById('edit_baocao_id').value;
+            const newDate = document.getElementById('edit_ngay_kiem_tra').value;
+
+            try {
+                // Cập nhật ngày mới vào bảng bbkt
+                const { error } = await db.from('bbkt').update({ thoi_gian: newDate }).eq('baocao_id', baocao_id);
+                if (error) throw error;
+                
+                closeEditModal();
+                loadAdminData(); 
+            } catch (err) {
+                alert('❌ Lỗi khi cập nhật: ' + err.message);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Lưu Cập Nhật';
+                btn.disabled = false;
+            }
+        }
+
+        // --- HÀM XÓA CŨ ---
         async function deleteReport(baocao_id) {
-            // Kiểm tra pass trước khi xóa
             if (!verifyAdmin()) return;
 
             if (!confirm('⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA biên bản này?\n\nSau khi xóa, bảng thống kê sẽ báo thiếu và nhân viên bắt buộc phải nộp lại.')) {
