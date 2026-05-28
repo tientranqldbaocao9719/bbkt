@@ -34,12 +34,15 @@
 
     <div class="p-2 md:p-4 w-full flex-1 flex flex-col min-h-0 gap-3">
         
-        <div class="bg-white rounded shadow-sm border border-slate-200 p-3 shrink-0 flex flex-wrap items-end gap-3 z-10">
+        <div class="bg-white rounded shadow-sm border border-slate-200 p-3 shrink-0 flex flex-wrap items-end gap-3 z-10 relative">
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Tên Đường Dây</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
-                    <input type="text" id="searchName" placeholder="Gõ từ khóa..." class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-400 outline-none">
+                    <input type="text" id="searchName" placeholder="Gõ từ khóa..." autocomplete="off" class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-400 outline-none">
+                    
+                    <ul id="suggestionBox" class="absolute z-50 w-full bg-white border border-slate-300 rounded shadow-lg mt-1 hidden max-h-48 overflow-y-auto divide-y divide-slate-100">
+                        </ul>
                 </div>
             </div>
             <div class="flex-1 min-w-[150px]">
@@ -66,7 +69,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded shadow-md flex flex-col h-full border border-slate-200 overflow-hidden relative">
+        <div class="bg-white rounded shadow-md flex flex-col h-full border border-slate-200 overflow-hidden relative z-0">
             
             <div class="table-container w-full bg-white relative flex-1 border-b border-slate-200">
                 <table class="w-full text-left border-collapse" id="adminTable">
@@ -145,7 +148,7 @@
             return false;
         }
 
-        // [THÊM MỚI] Tự động tải danh sách "Loại biên bản" vào select box
+        // Tự động tải danh sách "Loại biên bản" vào select box
         async function loadFilterOptions() {
             const { data, error } = await db.from('dmbb').select('ten_bb');
             if (!error && data) {
@@ -159,37 +162,24 @@
             }
         }
 
-        // [CẬP NHẬT] Hàm gọi dữ liệu có tích hợp các điều kiện lọc
+        // Hàm gọi dữ liệu có tích hợp các điều kiện lọc
         async function loadAdminData() {
             try {
                 const fromIndex = (currentPage - 1) * itemsPerPage;
                 const toIndex = fromIndex + itemsPerPage - 1;
 
-                // Khởi tạo câu query cơ bản
                 let query = db.from('admin_recent_reports').select('*', { count: 'exact' });
 
-                // Lấy giá trị từ bộ lọc
                 const searchName = document.getElementById('searchName').value.trim();
                 const filterType = document.getElementById('filterType').value;
                 const filterStartDate = document.getElementById('filterStartDate').value;
                 const filterEndDate = document.getElementById('filterEndDate').value;
 
-                // Nối các điều kiện tìm kiếm vào query nếu người dùng có nhập
-                if (searchName) {
-                    query = query.ilike('ten_duong_day', `%${searchName}%`);
-                }
-                if (filterType) {
-                    query = query.eq('ten_bb', filterType);
-                }
-                if (filterStartDate) {
-                    // Cần cộng thêm giờ phút giây để bao quát trọn ngày
-                    query = query.gte('thoi_gian', filterStartDate + 'T00:00:00');
-                }
-                if (filterEndDate) {
-                    query = query.lte('thoi_gian', filterEndDate + 'T23:59:59');
-                }
+                if (searchName) query = query.ilike('ten_duong_day', `%${searchName}%`);
+                if (filterType) query = query.eq('ten_bb', filterType);
+                if (filterStartDate) query = query.gte('thoi_gian', filterStartDate + 'T00:00:00');
+                if (filterEndDate) query = query.lte('thoi_gian', filterEndDate + 'T23:59:59');
 
-                // Thực thi câu lệnh, luôn xếp mới nhất lên đầu
                 const { data, count, error } = await query
                     .order('thoi_gian', { ascending: false })
                     .range(fromIndex, toIndex);
@@ -237,14 +227,13 @@
             }
         }
 
-        // [THÊM MỚI] Áp dụng Bộ Lọc
+        // --- CÁC HÀM XỬ LÝ LỌC VÀ GỢI Ý (MỚI THÊM) ---
         function applyFilters() {
-            currentPage = 1; // Khởi động lại từ trang 1 khi đổi bộ lọc
+            currentPage = 1;
             document.getElementById('tbody').innerHTML = `<tr><td colspan="5" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tìm kiếm...</td></tr>`;
             loadAdminData();
         }
 
-        // [THÊM MỚI] Xóa trắng Bộ Lọc
         function clearFilters() {
             document.getElementById('searchName').value = '';
             document.getElementById('filterType').value = '';
@@ -253,12 +242,82 @@
             applyFilters();
         }
 
-        // Cho phép ấn Enter ở thanh tìm kiếm tên
-        document.getElementById('searchName').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') applyFilters();
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const searchInput = document.getElementById('searchName');
+        const suggestionBox = document.getElementById('suggestionBox');
+
+        async function fetchSuggestions(keyword) {
+            if (!keyword) {
+                suggestionBox.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const { data, error } = await db.from('admin_recent_reports')
+                    .select('ten_duong_day')
+                    .ilike('ten_duong_day', `%${keyword}%`)
+                    .limit(20);
+
+                if (error) throw error;
+
+                const uniqueNames = [...new Set(data.map(item => item.ten_duong_day))].filter(Boolean);
+
+                if (uniqueNames.length > 0) {
+                    let html = '';
+                    uniqueNames.forEach(name => {
+                        const regex = new RegExp(`(${keyword})`, 'gi');
+                        const highlightedName = name.replace(regex, '<span class="font-bold text-blue-600">$1</span>');
+                        const safeName = name.replace(/'/g, "\\'"); 
+
+                        html += `<li onclick="selectSuggestion('${safeName}')" class="px-3 py-2 text-sm text-slate-700 cursor-pointer hover:bg-blue-50 transition-colors">
+                                    ${highlightedName}
+                                 </li>`;
+                    });
+                    suggestionBox.innerHTML = html;
+                    suggestionBox.classList.remove('hidden');
+                } else {
+                    suggestionBox.innerHTML = `<li class="px-3 py-2 text-sm text-slate-400 italic">Không tìm thấy đường dây nào...</li>`;
+                    suggestionBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Lỗi lấy gợi ý:", err);
+            }
+        }
+
+        function selectSuggestion(selectedName) {
+            searchInput.value = selectedName;
+            suggestionBox.classList.add('hidden');
+            applyFilters();
+        }
+
+        const handleInput = debounce((e) => {
+            const keyword = e.target.value.trim();
+            fetchSuggestions(keyword);
+        }, 300);
+
+        searchInput.addEventListener('input', handleInput);
+
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                suggestionBox.classList.add('hidden');
+                applyFilters();
+            }
         });
 
-        // Hàm cập nhật hiển thị nút phân trang
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionBox.contains(e.target)) {
+                suggestionBox.classList.add('hidden');
+            }
+        });
+        // --- KẾT THÚC CÁC HÀM XỬ LÝ LỌC VÀ GỢI Ý ---
+
         function updatePaginationUI() {
             const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
             document.getElementById('pageInfo').innerHTML = `Trang <span class="text-blue-600">${currentPage}</span> / ${totalPages} (Tổng cộng: ${totalItems} báo cáo)`;
@@ -267,7 +326,6 @@
             document.getElementById('btnNext').disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // Hàm xử lý khi bấm nút chuyển trang
         function changePage(delta) {
             currentPage += delta;
             document.getElementById('tbody').innerHTML = `<tr><td colspan="5" class="p-10 text-center font-bold text-blue-500 animate-pulse text-sm">Đang tải trang ${currentPage}...</td></tr>`;
@@ -329,8 +387,8 @@
 
         // Chạy khởi tạo lúc mở web
         window.onload = () => {
-            loadFilterOptions(); // Lấy danh sách loại biên bản bỏ vào dropdown
-            loadAdminData();     // Lấy dữ liệu bảng
+            loadFilterOptions(); 
+            loadAdminData();     
         };
     </script>
 </body>
