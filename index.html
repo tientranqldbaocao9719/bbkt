@@ -119,6 +119,9 @@
             const { data, error } = await db.rpc('get_yearly_report_summary', { target_year: parseInt(year) });
             if (error) { console.error(error); alert("Lỗi tải dữ liệu!"); return; }
 
+            // [THÊM MỚI] Sắp xếp mảng data theo Tên Đường Dây (A-Z), hỗ trợ chuẩn tiếng Việt
+            data.data.sort((a, b) => a.ten_duong_day.localeCompare(b.ten_duong_day, 'vi'));
+
             allLineNames = data.data.map(d => d.ten_duong_day);
 
             let totalActualOverall = 0;
