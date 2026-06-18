@@ -100,16 +100,62 @@
         </div>
     </div>
 
+    <iframe id="upload_iframe" name="upload_iframe" class="hidden" style="display:none;"></iframe>
+
     <script>
         // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwOo1wv-sAjt7PrNSZuZHs3LyNALsHlNGzSmFnjyPz0bHwaYrZ_xal84exutrQLn8v5Uw/exec';
+        
+        // Nhớ thay thế Google Script URL của bạn sau khi đã deploy code .gs mới
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbxFJCC2m3zTMXa859rc46TTqAWHhWojfdkidkOzshvNLzAN7Cm4v02P2DrKxnvMujottA/exec';
 
         let allLineNames = []; 
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
+
+        // --- LẮNG NGHE KẾT QUẢ TỪ GOOGLE APPS SCRIPT TRẢ VỀ ---
+        window.addEventListener('message', async function(event) {
+            const data = event.data;
+            if (!data || !data.status) return;
+
+            const btn = document.getElementById('inline_btnSubmit');
+            const status = document.getElementById('inline_status');
+            const fileInput = document.getElementById('inline_fileInput');
+
+            if (data.status === 'success') {
+                try {
+                    // Cập nhật link file vào Supabase
+                    const { error } = await db.from('bbkt').insert([
+                        { ma_thiet_bi: data.ma_thiet_bi, bbkt_id: data.bbkt_id, file_url: data.url, thoi_gian: data.ngay_kiem_tra }
+                    ]);
+
+                    if (error) throw error;
+
+                    status.classList.remove('hidden');
+                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-green-100 text-green-700 rounded border border-green-200";
+                    status.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Tải lên Google Drive thành công!';
+                    btn.innerHTML = 'Đang làm mới bảng...';
+                    
+                    if(fileInput) fileInput.value = ''; // Reset input
+                    setTimeout(() => { toggleModal(); init(); }, 1000);
+
+                } catch (dbErr) {
+                    status.classList.remove('hidden');
+                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
+                    status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi lưu DB: ' + dbErr.message;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
+                }
+            } else if (data.status === 'error') {
+                status.classList.remove('hidden');
+                status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
+                status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi Drive: ' + data.message;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
+            }
+        });
 
         // --- HÀM KHỞI TẠO DỮ LIỆU CHÍNH ---
         async function init() {
@@ -182,7 +228,7 @@
             document.getElementById('summaryStats').innerHTML = statsHtml;
         }
 
-        // --- RENDER TIÊU ĐỀ BẢNG (GIAO DIỆN BADGE MỚI) ---
+        // --- RENDER TIÊU ĐỀ BẢNG ---
         function renderHeader(config) {
             let html = `<tr><th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
@@ -207,7 +253,6 @@
             data.forEach(row => {
                 let badge = '';
                 
-                // 1. Badge Loại đường dây
                 if(row.loai_dday === 'CAP_NGAM') {
                     badge += '<span class="ml-2 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Cáp ngầm</span>';
                 }
@@ -215,7 +260,6 @@
                     badge += '<span class="ml-2 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Hỗn hợp</span>';
                 }
 
-                // 2. Badge Tình trạng
                 if(row.tinhtrang === 'Vận hành') {
                     badge += '<span class="ml-2 bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Vận hành</span>';
                 } 
@@ -393,63 +437,57 @@
             document.body.classList.add('modal-active');
         }
 
-        async function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
+        function toggleModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
+        }
+
+        // --- HÀM UPLOAD MỚI (DÙNG NATIVE FORM BYPASS BASE64) ---
+        function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
             e.preventDefault();
             const btn = document.getElementById('inline_btnSubmit');
             const status = document.getElementById('inline_status');
             const fileInput = document.getElementById('inline_fileInput');
             const ngay_kiem_tra = document.getElementById('inline_ngay_kiem_tra').value;
-            const file = fileInput.files[0];
+
+            if (!fileInput.files.length) return;
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải lên Drive...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải file lên Drive...';
             status.classList.add('hidden');
 
-            try {
-                const reader = new FileReader();
-                reader.onload = async function() {
-                    const base64Data = reader.result.split(',')[1];
-                    const response = await fetch(googleScriptUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ 
-                            fileName: file.name, mimeType: file.type, base64: base64Data,
-                            ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, ngay_kiem_tra: ngay_kiem_tra
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if(result.status === 'success') {
-                        const { error } = await db.from('bbkt').insert([
-                            { ma_thiet_bi: ma_thiet_bi, bbkt_id: bbkt_id, file_url: result.url, thoi_gian: ngay_kiem_tra }
-                        ]);
+            // Tạo một form ảo bắn thẳng dữ liệu qua iframe ẩn
+            const form = document.createElement('form');
+            form.action = googleScriptUrl;
+            form.method = 'POST';
+            form.enctype = 'multipart/form-data'; // Bắt buộc để gửi file nguyên bản
+            form.target = 'upload_iframe'; // Trỏ target vào iframe ẩn
 
-                        if(error) throw error;
+            // Clone lại input file để đưa vào form ảo
+            const clonedFileInput = fileInput.cloneNode(true);
+            clonedFileInput.name = 'file';
+            form.appendChild(clonedFileInput);
 
-                        status.classList.remove('hidden');
-                        status.className = "text-xs text-center font-bold mt-3 p-2 bg-green-100 text-green-700 rounded border border-green-200";
-                        status.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Tải lên thành công!';
-                        btn.innerHTML = 'Đang làm mới bảng...';
-                        
-                        setTimeout(() => { toggleModal(); init(); }, 1000);
+            // Gắn thêm các metadata
+            const inputs = {
+                'ma_thiet_bi': ma_thiet_bi,
+                'bbkt_id': bbkt_id,
+                'ngay_kiem_tra': ngay_kiem_tra
+            };
 
-                    } else { throw new Error(result.message); }
-                };
-                reader.readAsDataURL(file);
-                
-            } catch (err) {
-                status.classList.remove('hidden');
-                status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
-                status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi: ' + err.message;
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i> Thử lại';
+            for (const [key, value] of Object.entries(inputs)) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = key;
+                hiddenInput.value = value;
+                form.appendChild(hiddenInput);
             }
-        }
 
-        function toggleModal() {
-            const modal = document.getElementById('modal');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            document.body.classList.remove('modal-active');
+            // Gắn form vào body, submit, rồi dọn dẹp ngay
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
 
         init();
