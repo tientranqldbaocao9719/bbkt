@@ -118,7 +118,6 @@
         // --- LẮNG NGHE TÍN HIỆU TỪ GOOGLE TRẢ VỀ (QUA window.top) ---
         window.addEventListener('message', async function(event) {
             const data = event.data;
-            // Chỉ bắt các gói tin có chứa trường status từ Apps Script của chúng ta
             if (!data || !data.status) return;
 
             const btn = document.getElementById('inline_btnSubmit');
@@ -129,7 +128,6 @@
                 try {
                     btn.innerHTML = '<i class="fa-solid fa-database fa-spin mr-1"></i> Đang đồng bộ Supabase...';
                     
-                    // Cập nhật URL file vào database
                     const { error } = await db.from('bbkt').insert([
                         { ma_thiet_bi: data.ma_thiet_bi, bbkt_id: data.bbkt_id, file_url: data.url, thoi_gian: data.ngay_kiem_tra }
                     ]);
@@ -444,13 +442,14 @@
             document.body.classList.remove('modal-active');
         }
 
-        // --- HÀM UPLOAD GỬI FORM ẨN (KHÔNG CORS, KHÔNG TRÀN RAM) ---
+        // --- HÀM UPLOAD (SỬ DỤNG TRỰC TIẾP FORM HIỆN TẠI ĐỂ GIỮ NGUYÊN FILE) ---
         function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
-            e.preventDefault();
+            e.preventDefault(); 
+            
             const btn = document.getElementById('inline_btnSubmit');
             const status = document.getElementById('inline_status');
             const fileInput = document.getElementById('inline_fileInput');
-            const ngay_kiem_tra = document.getElementById('inline_ngay_kiem_tra').value;
+            const ngayKiemTraInput = document.getElementById('inline_ngay_kiem_tra');
 
             if (!fileInput.files.length) {
                 alert("Vui lòng chọn file báo cáo!");
@@ -461,37 +460,33 @@
             status.classList.add('hidden');
             btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-1"></i> Đang tải lên Drive...';
 
-            // Tạo một form ảo bắn thẳng dữ liệu qua iframe ẩn để né CORS
-            const form = document.createElement('form');
+            const form = document.getElementById('inlineUploadForm');
+            
             form.action = googleScriptUrl;
             form.method = 'POST';
-            form.enctype = 'multipart/form-data'; 
-            form.target = 'upload_iframe'; // Đích đến là cái iframe tàng hình
+            form.enctype = 'multipart/form-data';
+            form.target = 'upload_iframe';
 
-            // Nhúng file gốc vào form ảo
-            const clonedFileInput = fileInput.cloneNode(true);
-            clonedFileInput.name = 'file';
-            form.appendChild(clonedFileInput);
+            fileInput.name = 'file';
+            ngayKiemTraInput.name = 'ngay_kiem_tra';
 
-            // Gắn thêm các dữ liệu chữ đi kèm
-            const inputs = {
+            form.querySelectorAll('.temp-data').forEach(el => el.remove());
+
+            const extraData = {
                 'ma_thiet_bi': ma_thiet_bi,
-                'bbkt_id': bbkt_id,
-                'ngay_kiem_tra': ngay_kiem_tra
+                'bbkt_id': bbkt_id
             };
 
-            for (const [key, value] of Object.entries(inputs)) {
+            for (const [key, value] of Object.entries(extraData)) {
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = key;
                 hiddenInput.value = value;
+                hiddenInput.className = 'temp-data'; 
                 form.appendChild(hiddenInput);
             }
 
-            // Submit form và lập tức xóa form ảo đi cho sạch RAM
-            document.body.appendChild(form);
             form.submit();
-            document.body.removeChild(form);
         }
 
         init();
