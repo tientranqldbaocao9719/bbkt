@@ -100,18 +100,65 @@
         </div>
     </div>
 
+    <iframe id="upload_iframe" name="upload_iframe" class="hidden" style="display:none;"></iframe>
+
     <script>
         // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
         
-        // NHỚ KIỂM TRA LẠI URL NÀY - Đảm bảo đây là URL của bản Deploy mới nhất trên Apps Script
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbySrUMOesl9vk24wAjH_1q1yH27hO-R32BDU8dGf73DXpqGSySf4PXKnX7exZH9EpOKSA/exec';
+        // --- GOOGLE APPS SCRIPT URL ---
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbxpRhz71mF_Bjc-H7sRIAHy3In8JHsKBSZ4WHzlAtk7zI-CQZQu0zK2mpnSdenNy9c6mQ/exec';
 
         let allLineNames = []; 
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
+
+        // --- LẮNG NGHE TÍN HIỆU TỪ GOOGLE TRẢ VỀ (QUA window.top) ---
+        window.addEventListener('message', async function(event) {
+            const data = event.data;
+            // Chỉ bắt các gói tin có chứa trường status từ Apps Script của chúng ta
+            if (!data || !data.status) return;
+
+            const btn = document.getElementById('inline_btnSubmit');
+            const status = document.getElementById('inline_status');
+            const fileInput = document.getElementById('inline_fileInput');
+
+            if (data.status === 'success') {
+                try {
+                    btn.innerHTML = '<i class="fa-solid fa-database fa-spin mr-1"></i> Đang đồng bộ Supabase...';
+                    
+                    // Cập nhật URL file vào database
+                    const { error } = await db.from('bbkt').insert([
+                        { ma_thiet_bi: data.ma_thiet_bi, bbkt_id: data.bbkt_id, file_url: data.url, thoi_gian: data.ngay_kiem_tra }
+                    ]);
+
+                    if (error) throw error;
+
+                    status.classList.remove('hidden');
+                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-green-100 text-green-700 rounded border border-green-200";
+                    status.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Tải lên thành công!';
+                    btn.innerHTML = 'Đang làm mới bảng...';
+                    
+                    if(fileInput) fileInput.value = ''; 
+                    setTimeout(() => { toggleModal(); init(); }, 1000);
+
+                } catch (dbErr) {
+                    status.classList.remove('hidden');
+                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
+                    status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi lưu DB: ' + dbErr.message;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
+                }
+            } else if (data.status === 'error') {
+                status.classList.remove('hidden');
+                status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
+                status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi Drive: ' + data.message;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
+            }
+        });
 
         // --- HÀM KHỞI TẠO DỮ LIỆU CHÍNH ---
         async function init() {
@@ -121,9 +168,7 @@
             const { data, error } = await db.rpc('get_yearly_report_summary', { target_year: parseInt(year) });
             if (error) { console.error(error); alert("Lỗi tải dữ liệu!"); return; }
 
-            // Sắp xếp mảng data theo Tên Đường Dây (A-Z)
             data.data.sort((a, b) => a.ten_duong_day.localeCompare(b.ten_duong_day, 'vi'));
-
             allLineNames = data.data.map(d => d.ten_duong_day);
 
             let totalActualOverall = 0;
@@ -399,8 +444,8 @@
             document.body.classList.remove('modal-active');
         }
 
-        // --- HÀM UPLOAD MỚI (DÙNG FETCH API VÀ FORMDATA) ---
-        async function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
+        // --- HÀM UPLOAD GỬI FORM ẨN (KHÔNG CORS, KHÔNG TRÀN RAM) ---
+        function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
             e.preventDefault();
             const btn = document.getElementById('inline_btnSubmit');
             const status = document.getElementById('inline_status');
@@ -411,55 +456,42 @@
                 alert("Vui lòng chọn file báo cáo!");
                 return;
             }
-            const file = fileInput.files[0];
 
             btn.disabled = true;
             status.classList.add('hidden');
             btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-1"></i> Đang tải lên Drive...';
 
-            const formData = new FormData();
-            formData.append('file', file); 
-            formData.append('ma_thiet_bi', ma_thiet_bi);
-            formData.append('bbkt_id', bbkt_id);
-            formData.append('ngay_kiem_tra', ngay_kiem_tra);
+            // Tạo một form ảo bắn thẳng dữ liệu qua iframe ẩn để né CORS
+            const form = document.createElement('form');
+            form.action = googleScriptUrl;
+            form.method = 'POST';
+            form.enctype = 'multipart/form-data'; 
+            form.target = 'upload_iframe'; // Đích đến là cái iframe tàng hình
 
-            try {
-                const response = await fetch(googleScriptUrl, {
-                    method: 'POST',
-                    body: formData
-                });
+            // Nhúng file gốc vào form ảo
+            const clonedFileInput = fileInput.cloneNode(true);
+            clonedFileInput.name = 'file';
+            form.appendChild(clonedFileInput);
 
-                const result = await response.json();
+            // Gắn thêm các dữ liệu chữ đi kèm
+            const inputs = {
+                'ma_thiet_bi': ma_thiet_bi,
+                'bbkt_id': bbkt_id,
+                'ngay_kiem_tra': ngay_kiem_tra
+            };
 
-                if (result.status === 'success') {
-                    btn.innerHTML = '<i class="fa-solid fa-database fa-spin mr-1"></i> Đang đồng bộ link vào Supabase...';
-                    
-                    const { error } = await db.from('bbkt').insert([
-                        { ma_thiet_bi: result.ma_thiet_bi, bbkt_id: result.bbkt_id, file_url: result.url, thoi_gian: result.ngay_kiem_tra }
-                    ]);
-
-                    if (error) throw error;
-
-                    status.classList.remove('hidden');
-                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-green-100 text-green-700 rounded border border-green-200";
-                    status.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Tải lên thành công!';
-                    btn.innerHTML = 'Đang làm mới bảng...';
-                    
-                    fileInput.value = ''; 
-                    setTimeout(() => { toggleModal(); init(); }, 1000);
-
-                } else {
-                    throw new Error(result.message);
-                }
-
-            } catch (error) {
-                console.error(error);
-                status.classList.remove('hidden');
-                status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
-                status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi kết nối hoặc lưu file.';
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
+            for (const [key, value] of Object.entries(inputs)) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = key;
+                hiddenInput.value = value;
+                form.appendChild(hiddenInput);
             }
+
+            // Submit form và lập tức xóa form ảo đi cho sạch RAM
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
 
         init();
