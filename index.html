@@ -100,62 +100,18 @@
         </div>
     </div>
 
-    <iframe id="upload_iframe" name="upload_iframe" class="hidden" style="display:none;"></iframe>
-
     <script>
         // --- CẤU HÌNH API ---
         const supabaseUrl = 'https://exovpqkfcdoaubkmmgii.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4b3ZwcWtmY2RvYXVia21tZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODU5MjgsImV4cCI6MjA5NDk2MTkyOH0.J6t8K8hrXuKleZ-qvL7FXJmJQydVvP45vwiykAp4NUw';
         const db = supabase.createClient(supabaseUrl, supabaseKey);
         
-        // Nhớ thay thế Google Script URL của bạn sau khi đã deploy code .gs mới
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbz2OUzHKqEOnyAtEEv_LDvGQJPjVq2dh1VQNu5pHJ8DzQ_iTOCKOT_3nMrl_VCgEGVoRg/exec';
+        // NHỚ KIỂM TRA LẠI URL NÀY - Đảm bảo đây là URL của bản Deploy mới nhất trên Apps Script
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbxFJCC2m3zTMXa859rc46TTqAWHhWojfdkidkOzshvNLzAN7Cm4v02P2DrKxnvMujottA/exec';
 
         let allLineNames = []; 
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
-
-        // --- LẮNG NGHE KẾT QUẢ TỪ GOOGLE APPS SCRIPT TRẢ VỀ ---
-        window.addEventListener('message', async function(event) {
-            const data = event.data;
-            if (!data || !data.status) return;
-
-            const btn = document.getElementById('inline_btnSubmit');
-            const status = document.getElementById('inline_status');
-            const fileInput = document.getElementById('inline_fileInput');
-
-            if (data.status === 'success') {
-                try {
-                    // Cập nhật link file vào Supabase
-                    const { error } = await db.from('bbkt').insert([
-                        { ma_thiet_bi: data.ma_thiet_bi, bbkt_id: data.bbkt_id, file_url: data.url, thoi_gian: data.ngay_kiem_tra }
-                    ]);
-
-                    if (error) throw error;
-
-                    status.classList.remove('hidden');
-                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-green-100 text-green-700 rounded border border-green-200";
-                    status.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Tải lên Google Drive thành công!';
-                    btn.innerHTML = 'Đang làm mới bảng...';
-                    
-                    if(fileInput) fileInput.value = ''; // Reset input
-                    setTimeout(() => { toggleModal(); init(); }, 1000);
-
-                } catch (dbErr) {
-                    status.classList.remove('hidden');
-                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
-                    status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi lưu DB: ' + dbErr.message;
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
-                }
-            } else if (data.status === 'error') {
-                status.classList.remove('hidden');
-                status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
-                status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi Drive: ' + data.message;
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
-            }
-        });
 
         // --- HÀM KHỞI TẠO DỮ LIỆU CHÍNH ---
         async function init() {
@@ -443,51 +399,67 @@
             document.body.classList.remove('modal-active');
         }
 
-        // --- HÀM UPLOAD MỚI (DÙNG NATIVE FORM BYPASS BASE64) ---
-        function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
+        // --- HÀM UPLOAD MỚI (DÙNG FETCH API VÀ FORMDATA) ---
+        async function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
             e.preventDefault();
             const btn = document.getElementById('inline_btnSubmit');
             const status = document.getElementById('inline_status');
             const fileInput = document.getElementById('inline_fileInput');
             const ngay_kiem_tra = document.getElementById('inline_ngay_kiem_tra').value;
 
-            if (!fileInput.files.length) return;
+            if (!fileInput.files.length) {
+                alert("Vui lòng chọn file báo cáo!");
+                return;
+            }
+            const file = fileInput.files[0];
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải file lên Drive...';
             status.classList.add('hidden');
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-1"></i> Đang tải lên Drive...';
 
-            // Tạo một form ảo bắn thẳng dữ liệu qua iframe ẩn
-            const form = document.createElement('form');
-            form.action = googleScriptUrl;
-            form.method = 'POST';
-            form.enctype = 'multipart/form-data'; // Bắt buộc để gửi file nguyên bản
-            form.target = 'upload_iframe'; // Trỏ target vào iframe ẩn
+            const formData = new FormData();
+            formData.append('file', file); 
+            formData.append('ma_thiet_bi', ma_thiet_bi);
+            formData.append('bbkt_id', bbkt_id);
+            formData.append('ngay_kiem_tra', ngay_kiem_tra);
 
-            // Clone lại input file để đưa vào form ảo
-            const clonedFileInput = fileInput.cloneNode(true);
-            clonedFileInput.name = 'file';
-            form.appendChild(clonedFileInput);
+            try {
+                const response = await fetch(googleScriptUrl, {
+                    method: 'POST',
+                    body: formData
+                });
 
-            // Gắn thêm các metadata
-            const inputs = {
-                'ma_thiet_bi': ma_thiet_bi,
-                'bbkt_id': bbkt_id,
-                'ngay_kiem_tra': ngay_kiem_tra
-            };
+                const result = await response.json();
 
-            for (const [key, value] of Object.entries(inputs)) {
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = key;
-                hiddenInput.value = value;
-                form.appendChild(hiddenInput);
+                if (result.status === 'success') {
+                    btn.innerHTML = '<i class="fa-solid fa-database fa-spin mr-1"></i> Đang đồng bộ link vào Supabase...';
+                    
+                    const { error } = await db.from('bbkt').insert([
+                        { ma_thiet_bi: result.ma_thiet_bi, bbkt_id: result.bbkt_id, file_url: result.url, thoi_gian: result.ngay_kiem_tra }
+                    ]);
+
+                    if (error) throw error;
+
+                    status.classList.remove('hidden');
+                    status.className = "text-xs text-center font-bold mt-3 p-2 bg-green-100 text-green-700 rounded border border-green-200";
+                    status.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Tải lên thành công!';
+                    btn.innerHTML = 'Đang làm mới bảng...';
+                    
+                    fileInput.value = ''; 
+                    setTimeout(() => { toggleModal(); init(); }, 1000);
+
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                console.error(error);
+                status.classList.remove('hidden');
+                status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
+                status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi kết nối hoặc lưu file.';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Thử lại';
             }
-
-            // Gắn form vào body, submit, rồi dọn dẹp ngay
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
         }
 
         init();
