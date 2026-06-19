@@ -109,13 +109,13 @@
         const db = supabase.createClient(supabaseUrl, supabaseKey);
         
         // --- GOOGLE APPS SCRIPT URL ---
-        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwE5JZQUGSHOsWuiDI4kQkqNJcUL33b5CPVO04qJIr4ste8nwL6YR1qevcHZVpVTNy4Pw/exec';
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwwvep9i3wZu8YH-zc8aWq2T9en10MQStOAk6J2QcRhdcxQKjy1UE-ZxkJQHmXM5tqqHA/exec';
 
         let allLineNames = []; 
         const currentYear = new Date().getFullYear();
         document.getElementById('yearPicker').value = currentYear;
 
-        // --- LẮNG NGHE TÍN HIỆU TỪ GOOGLE TRẢ VỀ (QUA window.top) ---
+        // --- HỨNG KẾT QUẢ TỪ GOOGLE TRẢ VỀ ---
         window.addEventListener('message', async function(event) {
             const data = event.data;
             if (!data || !data.status) return;
@@ -126,7 +126,7 @@
 
             if (data.status === 'success') {
                 try {
-                    if (btn) btn.innerHTML = '<i class="fa-solid fa-database fa-spin mr-1"></i> Đang đồng bộ Supabase...';
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-database fa-spin mr-1"></i> Đang lưu Database...';
                     
                     const { error } = await db.from('bbkt').insert([
                         { ma_thiet_bi: data.ma_thiet_bi, bbkt_id: data.bbkt_id, file_url: data.url, thoi_gian: data.ngay_kiem_tra }
@@ -148,7 +148,7 @@
                     if (status) {
                         status.classList.remove('hidden');
                         status.className = "text-xs text-center font-bold mt-3 p-2 bg-red-100 text-red-700 rounded border border-red-200";
-                        status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi lưu DB: ' + dbErr.message;
+                        status.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Lỗi Database: ' + dbErr.message;
                     }
                     if (btn) {
                         btn.disabled = false;
@@ -168,7 +168,7 @@
             }
         });
 
-        // --- HÀM KHỞI TẠO DỮ LIỆU CHÍNH ---
+        // --- KHỞI TẠO DỮ LIỆU ---
         async function init() {
             const year = document.getElementById('yearPicker').value;
             if(!year) return;
@@ -219,7 +219,6 @@
             filterColumns(); 
         }
 
-        // --- RENDER DẢI KPI ---
         function renderKPIs(actual, reqCurrent, reqYear, selectedYear) {
             const currentYear = new Date().getFullYear();
             const currentMonth = selectedYear < currentYear ? 12 : (selectedYear === currentYear ? new Date().getMonth() + 1 : 'Tương lai');
@@ -237,12 +236,10 @@
             document.getElementById('summaryStats').innerHTML = statsHtml;
         }
 
-        // --- RENDER TIÊU ĐỀ BẢNG ---
         function renderHeader(config) {
             let html = `<tr><th class="sticky-col min-w-[200px] max-w-[300px]">TÊN ĐƯỜNG DÂY</th>`;
             config.forEach(c => {
                 const shortName = c.ten_bb.replace(/biên bản /gi, '').trim();
-                
                 html += `<th class="min-w-[100px]">
                     <div class="text-slate-700 whitespace-normal uppercase font-bold text-[11px] leading-snug">${shortName}</div>
                     <div class="mt-1.5 flex items-center justify-center">
@@ -256,25 +253,15 @@
             document.getElementById('thead').innerHTML = html;
         }
 
-        // --- RENDER NỘI DUNG BẢNG ---
         function renderBody(data, config) {
             let html = '';
             data.forEach(row => {
                 let badge = '';
-                
-                if(row.loai_dday === 'CAP_NGAM') {
-                    badge += '<span class="ml-2 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Cáp ngầm</span>';
-                }
-                else if(row.loai_dday === 'HON_HOP') {
-                    badge += '<span class="ml-2 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Hỗn hợp</span>';
-                }
+                if(row.loai_dday === 'CAP_NGAM') badge += '<span class="ml-2 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Cáp ngầm</span>';
+                else if(row.loai_dday === 'HON_HOP') badge += '<span class="ml-2 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Hỗn hợp</span>';
 
-                if(row.tinhtrang === 'Vận hành') {
-                    badge += '<span class="ml-2 bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Vận hành</span>';
-                } 
-                else if(row.tinhtrang === 'Không vận hành') {
-                    badge += '<span class="ml-2 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold border border-slate-200">Không vận hành</span>';
-                }
+                if(row.tinhtrang === 'Vận hành') badge += '<span class="ml-2 bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold">Vận hành</span>';
+                else if(row.tinhtrang === 'Không vận hành') badge += '<span class="ml-2 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold border border-slate-200">Không vận hành</span>';
 
                 html += `<tr class="hover:bg-blue-50/50 transition-colors">
                     <td class="sticky-col whitespace-normal leading-snug min-w-[200px] max-w-[300px]" title="${row.ten_duong_day}">${row.ten_duong_day}${badge}</td>`;
@@ -282,23 +269,14 @@
                 config.forEach(c => {
                     const r = row.reports[c.bbkt_id];
                     const isApp = r && (r.is_applicable !== false);
-                    
                     if (!isApp) {
-                        html += `
-                        <td class="bg-slate-50 border-slate-200 cursor-not-allowed">
-                            <div class="w-full h-full flex items-center justify-center text-slate-300 font-bold text-lg" title="Không áp dụng">
-                                <i class="fa-solid fa-minus"></i>
-                            </div>
-                        </td>`;
-                    } 
-                    else {
+                        html += `<td class="bg-slate-50 border-slate-200 cursor-not-allowed"><div class="w-full h-full flex items-center justify-center text-slate-300 font-bold text-lg" title="Không áp dụng"><i class="fa-solid fa-minus"></i></div></td>`;
+                    } else {
                         const isMissing = (r.actual < r.required) || (r.is_compliant === false);
                         const bgClass = isMissing ? 'bg-yellow-100 hover:brightness-95' : 'bg-transparent hover:bg-slate-100';
                         const textClass = isMissing ? 'text-yellow-800' : 'text-slate-600';
                         const safeDetails = encodeURIComponent(JSON.stringify(r.details));
-
-                        html += `
-                        <td class="${bgClass} cursor-pointer transition-all" onclick="showDetails('${row.ma_thiet_bi}', '${c.bbkt_id}', '${row.ten_duong_day}', '${c.ten_bb}', '${safeDetails}')">
+                        html += `<td class="${bgClass} cursor-pointer transition-all" onclick="showDetails('${row.ma_thiet_bi}', '${c.bbkt_id}', '${row.ten_duong_day}', '${c.ten_bb}', '${safeDetails}')">
                             <div class="w-full h-full flex items-center justify-center font-bold text-[13px] ${textClass}">
                                 ${r.actual} <span class="text-[10px] opacity-50 mx-1">/</span> ${r.required}
                             </div>
@@ -310,21 +288,15 @@
             document.getElementById('tbody').innerHTML = html;
         }
 
-        // --- XỬ LÝ THANH TÌM KIẾM AUTOCOMPLETE ---
+        // --- CÁC HÀM XỬ LÝ FILTER TÌM KIẾM ---
         function handleSearchInput(e) {
             const inputVal = e.target.value.toLowerCase();
             const dropdown = document.getElementById('searchDropdown');
             const clearBtn = document.getElementById('clearSearch');
             dropdown.innerHTML = '';
-
             filterTable();
 
-            if (!inputVal) {
-                dropdown.classList.add('hidden');
-                clearBtn.style.display = 'none';
-                return;
-            }
-            
+            if (!inputVal) { dropdown.classList.add('hidden'); clearBtn.style.display = 'none'; return; }
             clearBtn.style.display = 'flex';
             const filteredNames = allLineNames.filter(n => n.toLowerCase().includes(inputVal));
             
@@ -333,22 +305,15 @@
                     const li = document.createElement('li');
                     li.className = 'p-3 text-sm hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-slate-100 last:border-b-0 text-slate-700 transition-colors whitespace-normal leading-snug';
                     li.textContent = name;
-                    li.onclick = () => {
-                        document.getElementById('nameFilter').value = name;
-                        dropdown.classList.add('hidden');
-                        filterTable(); 
-                    };
+                    li.onclick = () => { document.getElementById('nameFilter').value = name; dropdown.classList.add('hidden'); filterTable(); };
                     dropdown.appendChild(li);
                 });
                 dropdown.classList.remove('hidden');
-            } else {
-                dropdown.classList.add('hidden');
-            }
+            } else { dropdown.classList.add('hidden'); }
         }
 
         function clearSearchFilter() {
-            const input = document.getElementById('nameFilter');
-            input.value = '';
+            document.getElementById('nameFilter').value = '';
             document.getElementById('clearSearch').style.display = 'none';
             document.getElementById('searchDropdown').classList.add('hidden');
             filterTable();
@@ -356,25 +321,18 @@
 
         document.addEventListener('click', (e) => {
             const searchContainer = document.getElementById('nameFilter').parentElement;
-            if (!searchContainer.contains(e.target)) {
-                document.getElementById('searchDropdown').classList.add('hidden');
-            }
+            if (!searchContainer.contains(e.target)) document.getElementById('searchDropdown').classList.add('hidden');
         });
 
-        // --- XỬ LÝ ẨN/HIỆN CỘT ---
         function filterColumns() {
             const selectedIdx = document.getElementById("colFilter").value;
             const table = document.getElementById("reportTable");
             const rows = table.getElementsByTagName("tr");
-
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].children; 
                 for (let j = 1; j < cells.length; j++) {
-                    if (selectedIdx === "ALL" || parseInt(selectedIdx) === (j - 1)) {
-                        cells[j].style.display = "";
-                    } else {
-                        cells[j].style.display = "none";
-                    }
+                    if (selectedIdx === "ALL" || parseInt(selectedIdx) === (j - 1)) cells[j].style.display = "";
+                    else cells[j].style.display = "none";
                 }
             }
         }
@@ -421,19 +379,15 @@
             html += `
             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <p class="text-[13px] font-black text-blue-800 uppercase mb-3"><i class="fa-solid fa-cloud-arrow-up mr-1 text-base"></i> Nộp Bổ Sung</p>
-                <form id="inlineUploadForm" action="${googleScriptUrl}" method="POST" enctype="multipart/form-data" target="upload_iframe" onsubmit="showLoadingUI()" class="space-y-3">
-                    
-                    <input type="hidden" name="ma_thiet_bi" value="${maThietBi}">
-                    <input type="hidden" name="bbkt_id" value="${bbktId}">
-
+                <form id="inlineUploadForm" onsubmit="handleInlineUpload(event, '${maThietBi}', '${bbktId}')" class="space-y-3">
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 mb-1">Ngày kiểm tra thực tế:</label>
-                        <input type="date" name="ngay_kiem_tra" id="inline_ngay_kiem_tra" value="${todayStr}" required class="w-full p-2 border border-slate-300 rounded text-[13px] outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                        <input type="date" id="inline_ngay_kiem_tra" value="${todayStr}" required class="w-full p-2 border border-slate-300 rounded text-[13px] outline-none focus:ring-2 focus:ring-blue-400 bg-white">
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 mb-1">File báo cáo (Tự kế thừa tên đường dây):</label>
                         <div class="border border-dashed border-slate-300 rounded p-1.5 bg-white">
-                            <input type="file" name="file" id="inline_fileInput" required accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-slate-800 file:text-white file:font-bold file:cursor-pointer hover:file:bg-slate-700 cursor-pointer">
+                            <input type="file" id="inline_fileInput" required accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-slate-800 file:text-white file:font-bold file:cursor-pointer hover:file:bg-slate-700 cursor-pointer">
                         </div>
                     </div>
                     <button type="submit" id="inline_btnSubmit" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded text-[13px] hover:bg-blue-700 transition-colors mt-2 shadow">
@@ -456,19 +410,77 @@
             document.body.classList.remove('modal-active');
         }
 
-        // --- HÀM CẬP NHẬT GIAO DIỆN KHI ĐANG UPLOAD ---
-        function showLoadingUI() {
-            setTimeout(() => {
-                const btn = document.getElementById('inline_btnSubmit');
-                const status = document.getElementById('inline_status');
-                if(btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-1"></i> Đang tải lên Drive...';
+        // --- CƠ CHẾ NỘP FILE XUYÊN CÁC LỚP BẢO MẬT (ĐỌC BASE64, GỬI BẰNG FORM ẨN) ---
+        function handleInlineUpload(e, ma_thiet_bi, bbkt_id) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('inline_btnSubmit');
+            const status = document.getElementById('inline_status');
+            const fileInput = document.getElementById('inline_fileInput');
+            const ngay_kiem_tra = document.getElementById('inline_ngay_kiem_tra').value;
+
+            if (!fileInput.files.length) {
+                alert("Vui lòng chọn file báo cáo!");
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Cảnh báo nếu file quá lớn (> 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert("Lưu ý: File lớn hơn 10MB có thể mất nhiều thời gian để tải lên.");
+            }
+
+            btn.disabled = true;
+            status.classList.add('hidden');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang đọc file...';
+
+            // Dùng FileReader để chuyển đổi file thành Base64
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Tách phần dữ liệu thật sự khỏi header data:application/pdf...
+                const base64Data = event.target.result.split(',')[1];
+                
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-1"></i> Đang tải lên Drive...';
+
+                // Tạo form tự động để chứa Base64 (Nhẹ hơn nhiều so với Fetch)
+                const form = document.createElement('form');
+                form.action = googleScriptUrl;
+                form.method = 'POST';
+                form.target = 'upload_iframe'; // Trỏ vào iframe để né CORS
+
+                const payloadData = {
+                    'fileData': base64Data,
+                    'fileName': file.name,
+                    'mimeType': file.type,
+                    'ma_thiet_bi': ma_thiet_bi,
+                    'bbkt_id': bbkt_id,
+                    'ngay_kiem_tra': ngay_kiem_tra
+                };
+
+                // Nhét toàn bộ data vào các input ẩn
+                for (const [key, value] of Object.entries(payloadData)) {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = key;
+                    hiddenInput.value = value;
+                    form.appendChild(hiddenInput);
                 }
-                if(status) {
-                    status.classList.add('hidden');
-                }
-            }, 10);
+
+                // Gắn form vào body, bấm gửi, và xóa form lập tức để giải phóng RAM
+                document.body.appendChild(form);
+                form.submit();
+                setTimeout(() => document.body.removeChild(form), 100);
+            };
+
+            reader.onerror = function() {
+                alert("Có lỗi khi đọc file trên thiết bị của bạn.");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Xác Nhận Tải Lên';
+            };
+
+            // Bắt đầu quy trình đọc
+            reader.readAsDataURL(file);
         }
 
         init();
